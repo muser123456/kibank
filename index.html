@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KiBank — Monitorização Bancária em Angola</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:       #1C2B3A;
+  --ink-light: #3A5068;
+  --ink-muted: #6B7E8F;
+  --gold:      #B8975A;
+  --gold-lt:   #D4B07A;
+  --gold-pale: #F5EDDE;
+  --cream:     #FAFAF7;
+  --white:     #FFFFFF;
+  --border:    #E4E8EC;
+  --border-lt: #F0F3F6;
+  --f-display: 'Playfair Display', Georgia, serif;
+  --f-body:    'Outfit', system-ui, sans-serif;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body { font-family: var(--f-body); background: var(--cream); color: var(--ink); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--cream); }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+.container { max-width: 1160px; margin: 0 auto; padding: 0 40px; }
+.tag { display: inline-block; font-size: 0.68rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.75s ease, transform 0.75s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* NAV */
+#nav { position: fixed; top: 0; left: 0; right: 0; z-index: 999; height: 70px; display: flex; align-items: center; background: rgba(28,43,58,0.96); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(184,151,90,0.15); transition: all 0.3s; }
+#nav.scrolled { background: rgba(20,30,42,0.99); box-shadow: 0 2px 24px rgba(0,0,0,0.18); }
+.nav-inner { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-family: var(--f-display); font-size: 1.5rem; font-weight: 700; color: var(--white); text-decoration: none; letter-spacing: -0.2px; }
+.nav-logo span { color: var(--gold); }
+.nav-menu { display: flex; align-items: center; gap: 4px; }
+.nav-menu a { color: rgba(255,255,255,0.65); text-decoration: none; font-size: 0.83rem; font-weight: 500; padding: 7px 13px; border-radius: 6px; transition: all 0.2s; white-space: nowrap; }
+.nav-menu a:hover { color: var(--white); background: rgba(255,255,255,0.07); }
+.nav-menu a.active { color: var(--gold); }
+.nav-cta { background: var(--gold) !important; color: var(--ink) !important; font-weight: 600 !important; margin-left: 10px; }
+.nav-cta:hover { background: var(--gold-lt) !important; }
+.hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; }
+.hamburger span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; transition: all 0.3s; }
+
+/* HERO */
+#hero { position: relative; min-height: 100vh; display: flex; align-items: center; background: var(--ink); overflow: hidden; }
+.hero-photo { position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1541354329998-f4d9a9f9297f?w=1800&q=85&auto=format&fit=crop'); background-size: cover; background-position: center 40%; opacity: 0.16; filter: grayscale(25%); }
+.hero-overlay { position: absolute; inset: 0; background: linear-gradient(118deg, rgba(28,43,58,0.97) 0%, rgba(28,43,58,0.78) 55%, rgba(28,43,58,0.50) 100%); }
+.hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(184,151,90,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(184,151,90,0.04) 1px, transparent 1px); background-size: 52px 52px; }
+.hero-inner { position: relative; z-index: 10; max-width: 1160px; margin: 0 auto; padding: 140px 40px 100px; width: 100%; display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 80px; align-items: center; }
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 28px; font-size: 0.72rem; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); }
+.hero-eyebrow::before { content: ''; display: block; width: 32px; height: 1px; background: var(--gold); }
+.hero-h1 { font-family: var(--f-display); font-size: clamp(2.5rem, 4.5vw, 3.7rem); font-weight: 700; color: var(--white); line-height: 1.12; letter-spacing: -0.5px; margin-bottom: 22px; }
+.hero-h1 em { color: var(--gold); font-style: normal; }
+.hero-p { font-size: 0.98rem; font-weight: 300; color: rgba(255,255,255,0.60); line-height: 1.82; max-width: 480px; margin-bottom: 42px; }
+.hero-actions { display: flex; gap: 14px; align-items: center; margin-bottom: 56px; flex-wrap: wrap; }
+.btn-primary { display: inline-flex; align-items: center; gap: 10px; background: var(--gold); color: var(--ink); font-family: var(--f-body); font-weight: 600; font-size: 0.87rem; letter-spacing: 0.3px; padding: 13px 26px; border-radius: 6px; text-decoration: none; border: none; cursor: pointer; transition: all 0.25s; }
+.btn-primary:hover { background: var(--gold-lt); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(184,151,90,0.3); }
+.btn-store { display: inline-flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.17); color: rgba(255,255,255,0.80); font-size: 0.83rem; font-weight: 400; padding: 12px 20px; border-radius: 6px; text-decoration: none; transition: all 0.25s; }
+.btn-store:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.28); }
+.btn-store-text small { display: block; font-size: 0.63rem; color: rgba(255,255,255,0.40); letter-spacing: 0.5px; margin-bottom: 1px; }
+.btn-store-text strong { font-weight: 600; font-size: 0.83rem; }
+.hero-metrics { display: flex; gap: 40px; padding-top: 36px; border-top: 1px solid rgba(255,255,255,0.09); }
+.metric-val { font-family: var(--f-display); font-size: 2rem; font-weight: 700; color: var(--white); line-height: 1; margin-bottom: 4px; }
+.metric-val span { color: var(--gold); }
+.metric-lbl { font-size: 0.73rem; font-weight: 400; color: rgba(255,255,255,0.42); letter-spacing: 0.4px; }
+
+/* Hero panel */
+.hero-panel { background: rgba(255,255,255,0.04); border: 1px solid rgba(184,151,90,0.18); border-radius: 12px; overflow: hidden; backdrop-filter: blur(12px); }
+.panel-header { padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; }
+.panel-title { font-size: 0.77rem; font-weight: 600; color: rgba(255,255,255,0.78); letter-spacing: 0.4px; }
+.panel-live { display: flex; align-items: center; gap: 6px; font-size: 0.63rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4caf7d; }
+.panel-live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #4caf7d; animation: livepulse 1.8s ease infinite; }
+@keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.panel-row { padding: 13px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); display: grid; grid-template-columns: 9px 1fr auto; gap: 12px; align-items: center; transition: background 0.2s; }
+.panel-row:hover { background: rgba(255,255,255,0.03); }
+.panel-row:last-child { border-bottom: none; }
+.p-dot { width: 8px; height: 8px; border-radius: 50%; }
+.p-name { font-size: 0.79rem; color: rgba(255,255,255,0.72); font-weight: 400; }
+.p-sub { font-size: 0.63rem; color: rgba(255,255,255,0.33); margin-top: 1px; }
+.p-badge { font-size: 0.63rem; font-weight: 600; padding: 3px 9px; border-radius: 4px; white-space: nowrap; }
+.b-ok { background: rgba(78,167,106,0.14); color: #5dba82; }
+.b-warn { background: rgba(210,160,50,0.14); color: #d4a040; }
+.b-bad { background: rgba(190,70,70,0.14); color: #d4706a; }
+.panel-footer { padding: 11px 22px; background: rgba(0,0,0,0.12); border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.63rem; color: rgba(255,255,255,0.28); }
+
+/* BANKS */
+#bancos { background: var(--white); padding: 48px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.banks-label { text-align: center; font-size: 0.67rem; letter-spacing: 2px; font-weight: 600; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 28px; }
+.banks-row { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bank-pill { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border: 1px solid var(--border); border-radius: 50px; background: var(--cream); transition: all 0.22s; cursor: default; }
+.bank-pill:hover { border-color: var(--gold); box-shadow: 0 2px 14px rgba(184,151,90,0.12); transform: translateY(-2px); }
+.bank-logo-img { width: 26px; height: 26px; border-radius: 50%; object-fit: contain; background: var(--white); padding: 2px; border: 1px solid var(--border); display: block; }
+.bank-logo-fb { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 800; color: var(--white); flex-shrink: 0; }
+.bank-pill-name { font-size: 0.81rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.bank-pill-full { font-size: 0.68rem; color: var(--ink-muted); white-space: nowrap; }
+
+/* SECTION */
+.s-pad { padding: 96px 0; }
+.s-head { max-width: 560px; }
+.s-head.center { margin: 0 auto; text-align: center; max-width: 640px; }
+.s-title { font-family: var(--f-display); font-size: clamp(1.8rem, 3vw, 2.55rem); font-weight: 700; color: var(--ink); line-height: 1.2; letter-spacing: -0.3px; margin-bottom: 16px; }
+.s-sub { font-size: 0.93rem; font-weight: 300; color: var(--ink-muted); line-height: 1.82; }
+
+/* HOW IT WORKS */
+#como-funciona { background: var(--cream); }
+.steps-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 64px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--white); }
+.step { padding: 38px 30px; border-right: 1px solid var(--border); position: relative; transition: background 0.25s; }
+.step:last-child { border-right: none; }
+.step:hover { background: var(--gold-pale); }
+.step-num { font-family: var(--f-display); font-size: 3.2rem; font-weight: 700; color: rgba(184,151,90,0.12); line-height: 1; margin-bottom: 20px; }
+.step-icon-wrap { width: 42px; height: 42px; border-radius: 8px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; background: var(--cream); }
+.step-icon-wrap svg { width: 19px; height: 19px; stroke: var(--gold); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.step-title { font-size: 0.88rem; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
+.step-desc { font-size: 0.80rem; font-weight: 300; color: var(--ink-muted); line-height: 1.72; }
+
+/* SERVICES */
+#servicos { background: var(--ink); position: relative; overflow: hidden; }
+#servicos::before { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 55%; background: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=900&q=80&auto=format&fit=crop') center/cover no-repeat; opacity: 0.09; }
+.services-inner { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.services-text .s-title { color: var(--white); }
+.services-text .s-sub { color: rgba(255,255,255,0.48); }
+.service-cards { display: flex; flex-direction: column; gap: 11px; margin-top: 36px; }
+.svc-card { display: flex; align-items: flex-start; gap: 16px; padding: 19px 22px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; transition: all 0.25s; }
+.svc-card:hover { background: rgba(184,151,90,0.07); border-color: rgba(184,151,90,0.22); }
+.svc-icon { width: 38px; height: 38px; border-radius: 8px; background: rgba(184,151,90,0.10); border: 1px solid rgba(184,151,90,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.svc-icon svg { width: 17px; height: 17px; stroke: var(--gold); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.svc-title { font-size: 0.86rem; font-weight: 600; color: var(--white); margin-bottom: 4px; }
+.svc-desc { font-size: 0.77rem; font-weight: 300; color: rgba(255,255,255,0.42); line-height: 1.62; }
+.services-dash { background: rgba(255,255,255,0.04); border: 1px solid rgba(184,151,90,0.18); border-radius: 12px; overflow: hidden; }
+.dash-head { padding: 17px 22px; border-bottom: 1px solid rgba(255,255,255,0.06); display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
+.dash-bank-name { font-size: 0.84rem; font-weight: 600; color: var(--white); }
+.dash-branch { font-size: 0.68rem; color: rgba(255,255,255,0.35); margin-top: 2px; }
+.dash-live { font-size: 0.6rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #4caf7d; display: flex; align-items: center; gap: 5px; }
+.dash-live::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #4caf7d; animation: livepulse 1.8s ease infinite; }
+.dash-item { display: grid; grid-template-columns: 8px 1fr auto; gap: 12px; align-items: center; padding: 11px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.dash-item:last-child { border-bottom: none; }
+.d-dot { width: 7px; height: 7px; border-radius: 50%; }
+.d-label { font-size: 0.77rem; color: rgba(255,255,255,0.65); }
+.d-badge { font-size: 0.63rem; font-weight: 600; padding: 3px 9px; border-radius: 4px; }
+.dash-foot { padding: 10px 22px; background: rgba(0,0,0,0.10); border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.63rem; color: rgba(255,255,255,0.28); display: flex; justify-content: space-between; }
+
+/* ABOUT */
+#sobre { background: var(--cream); }
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.about-photo-wrap { position: relative; }
+.about-photo { width: 100%; aspect-ratio: 4/5; object-fit: cover; border-radius: 10px; display: block; filter: saturate(0.82) brightness(0.94); }
+.about-photo-accent { position: absolute; bottom: -22px; right: -22px; width: 58%; aspect-ratio: 3/2; border-radius: 8px; overflow: hidden; border: 4px solid var(--cream); box-shadow: 0 10px 36px rgba(0,0,0,0.11); }
+.about-photo-accent img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.78); }
+.about-text p { font-size: 0.9rem; font-weight: 300; color: var(--ink-muted); line-height: 1.88; margin-bottom: 15px; }
+.about-text p strong { color: var(--ink); font-weight: 600; }
+.about-values { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-top: 32px; }
+.about-val { padding: 17px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); transition: border-color 0.2s; }
+.about-val:hover { border-color: var(--gold); }
+.about-val-title { font-size: 0.81rem; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.about-val-desc { font-size: 0.74rem; font-weight: 300; color: var(--ink-muted); line-height: 1.6; }
+
+/* PREMIUM */
+#premium { background: var(--white); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.premium-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.premium-feature-list { margin-top: 30px; display: flex; flex-direction: column; gap: 14px; }
+.pf-row { display: flex; align-items: flex-start; gap: 13px; }
+.pf-check { width: 21px; height: 21px; border-radius: 50%; background: var(--gold-pale); border: 1px solid rgba(184,151,90,0.28); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.pf-check svg { width: 10px; height: 10px; stroke: var(--gold); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.pf-text { font-size: 0.87rem; font-weight: 400; color: var(--ink); line-height: 1.6; }
+.premium-cta-area { margin-top: 38px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.btn-ink { display: inline-flex; align-items: center; gap: 9px; background: var(--ink); color: var(--white); font-weight: 600; font-size: 0.85rem; padding: 13px 24px; border-radius: 6px; text-decoration: none; border: none; cursor: pointer; transition: all 0.22s; }
+.btn-ink:hover { background: var(--ink-light); transform: translateY(-2px); }
+.btn-ghost { display: inline-flex; align-items: center; background: none; color: var(--ink-muted); font-weight: 500; font-size: 0.83rem; font-family: var(--f-body); text-decoration: underline; text-decoration-color: var(--border); border: none; cursor: pointer; transition: color 0.2s; }
+.btn-ghost:hover { color: var(--ink); }
+.premium-photo-col { position: relative; }
+.prem-main-img { width: 100%; border-radius: 10px; display: block; aspect-ratio: 4/5; object-fit: cover; filter: saturate(0.72) brightness(0.90); }
+.prem-card-overlay { position: absolute; bottom: 24px; left: -26px; width: 236px; background: var(--white); border-radius: 10px; padding: 18px; box-shadow: 0 14px 46px rgba(0,0,0,0.11); }
+.prem-card-label { font-size: 0.63rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 13px; }
+.prem-item { display: grid; grid-template-columns: 8px 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border-lt); }
+.prem-item:last-child { border: none; }
+.pi-dot { width: 7px; height: 7px; border-radius: 50%; }
+.pi-name { font-size: 0.71rem; color: var(--ink); font-weight: 400; }
+.pi-status { font-size: 0.63rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+.pi-ok { background: #EDF7F1; color: #2E7D54; }
+.pi-bad { background: #FCEAEA; color: #B03030; }
+.pi-warn { background: #FEF5E6; color: #A07C2A; }
+
+/* TESTIMONIALS */
+#testemunhos { background: var(--cream); }
+.testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 58px; }
+.testi-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 30px; transition: all 0.25s; }
+.testi-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 10px 32px rgba(184,151,90,0.09); }
+.testi-stars { display: flex; gap: 3px; margin-bottom: 16px; }
+.star { width: 13px; height: 13px; fill: var(--gold); }
+.testi-quote { font-family: var(--f-display); font-size: 0.92rem; font-weight: 400; color: var(--ink); line-height: 1.78; margin-bottom: 22px; font-style: italic; }
+.testi-author { display: flex; align-items: center; gap: 12px; }
+.testi-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--ink); display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 0.88rem; font-weight: 700; color: var(--white); border: 2px solid var(--gold-pale); flex-shrink: 0; }
+.testi-name { font-size: 0.82rem; font-weight: 600; color: var(--ink); }
+.testi-role { font-size: 0.70rem; color: var(--ink-muted); margin-top: 1px; }
+
+/* CTA */
+#comecar { background: var(--ink); position: relative; overflow: hidden; }
+#comecar::before { content: ''; position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=1400&q=75&auto=format&fit=crop') center/cover no-repeat; opacity: 0.07; filter: grayscale(60%); }
+.cta-wrap { position: relative; z-index: 2; text-align: center; max-width: 680px; margin: 0 auto; }
+.cta-wrap .s-title { color: var(--white); margin-bottom: 16px; }
+.cta-wrap .s-sub { color: rgba(255,255,255,0.48); margin-bottom: 44px; }
+.cta-btns { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+
+/* CONTACT */
+#contato { background: var(--cream); }
+.contact-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: flex-start; }
+.contact-info .s-sub { margin-bottom: 34px; }
+.contact-item { display: flex; align-items: flex-start; gap: 14px; padding: 15px 0; border-bottom: 1px solid var(--border); }
+.contact-item:first-of-type { border-top: 1px solid var(--border); }
+.ci-icon { width: 37px; height: 37px; border-radius: 7px; background: var(--white); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ci-icon svg { width: 16px; height: 16px; stroke: var(--gold); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ci-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.5px; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 3px; }
+.ci-val { font-size: 0.84rem; font-weight: 400; color: var(--ink); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+.form-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 15px; }
+.form-group label { font-size: 0.74rem; font-weight: 600; color: var(--ink); letter-spacing: 0.3px; }
+.form-group input, .form-group select, .form-group textarea { padding: 11px 15px; border: 1px solid var(--border); border-radius: 7px; background: var(--white); font-family: var(--f-body); font-size: 0.85rem; color: var(--ink); outline: none; transition: border-color 0.2s, box-shadow 0.2s; resize: none; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,151,90,0.10); }
+.form-group textarea { height: 118px; }
+
+/* FOOTER */
+footer { background: var(--ink); color: rgba(255,255,255,0.42); padding: 70px 0 30px; }
+.footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 56px; margin-bottom: 52px; }
+.footer-brand .nav-logo { display: block; margin-bottom: 14px; text-decoration: none; }
+.footer-brand p { font-size: 0.80rem; font-weight: 300; line-height: 1.82; max-width: 250px; }
+.footer-col h6 { font-size: 0.70rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--white); margin-bottom: 16px; }
+.footer-col a { display: block; text-decoration: none; font-size: 0.80rem; font-weight: 300; color: rgba(255,255,255,0.40); margin-bottom: 11px; transition: color 0.2s; }
+.footer-col a:hover { color: var(--gold); }
+.footer-divider { height: 1px; background: rgba(255,255,255,0.07); margin-bottom: 26px; }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.74rem; flex-wrap: wrap; gap: 12px; }
+.footer-bottom a { color: var(--gold); text-decoration: none; }
+
+/* BANK SEARCH IMPROVED */
+#buscar { background: var(--white); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.buscar-inner { padding: 48px 0; }
+.buscar-top { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 32px; }
+.buscar-top .banks-label { margin-bottom: 20px; }
+.search-bar-wrap { position: relative; max-width: 520px; width: 100%; }
+.search-bar-wrap input {
+  width: 100%; padding: 13px 20px 13px 46px; border: 1.5px solid var(--border); border-radius: 50px;
+  font-family: var(--f-body); font-size: 0.88rem; color: var(--ink); outline: none;
+  background: var(--cream); transition: border-color 0.25s, box-shadow 0.25s;
+}
+.search-bar-wrap input:focus { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(184,151,90,0.10); background: var(--white); }
+.search-bar-wrap input::placeholder { color: var(--ink-muted); }
+.search-bar-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; stroke: var(--ink-muted); fill: none; stroke-width: 1.8; stroke-linecap: round; pointer-events: none; transition: stroke 0.2s; }
+.search-bar-wrap input:focus ~ .search-bar-icon { stroke: var(--gold); }
+.filter-tabs { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; justify-content: center; }
+.filter-tab { padding: 6px 16px; border-radius: 50px; border: 1px solid var(--border); font-size: 0.74rem; font-weight: 600; color: var(--ink-muted); background: none; cursor: pointer; font-family: var(--f-body); transition: all 0.2s; }
+.filter-tab:hover, .filter-tab.active { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+.banks-row { transition: opacity 0.2s; }
+.bank-pill { cursor: pointer; }
+.bank-pill.hidden { display: none; }
+
+/* NEWS */
+#noticias { background: var(--cream); padding: 96px 0; }
+.news-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 26px; margin-top: 58px; }
+.news-card {
+  background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  display: flex; flex-direction: column;
+}
+.news-card:hover { transform: translateY(-6px); box-shadow: 0 16px 44px rgba(28,43,58,0.10); border-color: var(--gold); }
+.news-card-img { width: 100%; height: 200px; object-fit: cover; display: block; filter: saturate(0.85); transition: filter 0.35s ease; }
+.news-card:hover .news-card-img { filter: saturate(1); }
+.news-card-body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+.news-cat { display: inline-flex; align-items: center; gap: 6px; font-size: 0.65rem; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; margin-bottom: 12px; padding: 4px 10px; border-radius: 4px; }
+.news-cat-banca { background: rgba(28,43,58,0.07); color: var(--ink); }
+.news-cat-digital { background: rgba(184,151,90,0.12); color: #8a6c30; }
+.news-cat-regulacao { background: rgba(76,175,125,0.12); color: #2E7D54; }
+.news-title { font-family: var(--f-display); font-size: 1.05rem; font-weight: 600; color: var(--ink); line-height: 1.4; margin-bottom: 10px; }
+.news-excerpt { font-size: 0.80rem; font-weight: 300; color: var(--ink-muted); line-height: 1.72; flex: 1; margin-bottom: 20px; }
+.news-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-lt); padding-top: 16px; }
+.news-date { font-size: 0.68rem; color: var(--ink-muted); font-weight: 400; }
+.news-link { font-size: 0.75rem; font-weight: 600; color: var(--gold); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; transition: gap 0.2s; }
+.news-link:hover { gap: 8px; }
+.news-link svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* FAQ */
+#faq { background: var(--white); padding: 96px 0; border-top: 1px solid var(--border); }
+.faq-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+.faq-visual { position: relative; border-radius: 12px; overflow: hidden; }
+.faq-visual-img { width: 100%; aspect-ratio: 4/5; object-fit: cover; display: block; filter: saturate(0.75) brightness(0.90); }
+.faq-visual-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 28px; background: linear-gradient(0deg, rgba(28,43,58,0.92) 0%, transparent 100%); }
+.faq-visual-stat { font-family: var(--f-display); font-size: 2.6rem; font-weight: 700; color: var(--white); line-height: 1; }
+.faq-visual-stat-sub { font-size: 0.78rem; color: rgba(255,255,255,0.55); margin-top: 4px; }
+.faq-visual-badge { position: absolute; top: 22px; left: 22px; background: var(--gold); color: var(--ink); font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 14px; border-radius: 50px; }
+.faq-side { display: flex; flex-direction: column; gap: 0; }
+.faq-item { border-bottom: 1px solid var(--border); overflow: hidden; }
+.faq-item:first-of-type { border-top: 1px solid var(--border); }
+.faq-q {
+  width: 100%; background: none; border: none; cursor: pointer; padding: 22px 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  text-align: left; font-family: var(--f-body); font-size: 0.92rem; font-weight: 600;
+  color: var(--ink); transition: color 0.2s;
+}
+.faq-q:hover { color: var(--gold); }
+.faq-q.open { color: var(--gold); }
+.faq-icon { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.25s; }
+.faq-icon svg { width: 10px; height: 10px; stroke: var(--ink-muted); fill: none; stroke-width: 2.5; stroke-linecap: round; transition: transform 0.3s ease; }
+.faq-q.open .faq-icon { background: var(--gold); border-color: var(--gold); }
+.faq-q.open .faq-icon svg { stroke: var(--ink); transform: rotate(45deg); }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height 0.42s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; opacity: 0; }
+.faq-a.open { max-height: 240px; opacity: 1; }
+.faq-a-inner { padding: 0 0 22px; font-size: 0.85rem; font-weight: 300; color: var(--ink-muted); line-height: 1.82; }
+/* FAQ contact box */
+.faq-contact-box {
+  margin-top: 32px; background: var(--gold-pale); border: 1px solid rgba(184,151,90,0.25);
+  border-radius: 10px; padding: 22px 24px; display: flex; align-items: center; gap: 16px;
+  transition: box-shadow 0.2s;
+}
+.faq-contact-box:hover { box-shadow: 0 6px 22px rgba(184,151,90,0.14); }
+.faq-contact-icon { width: 44px; height: 44px; border-radius: 9px; background: var(--gold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.faq-contact-icon svg { width: 20px; height: 20px; stroke: var(--ink); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.faq-contact-text { flex: 1; }
+.faq-contact-text strong { font-size: 0.86rem; font-weight: 600; color: var(--ink); display: block; margin-bottom: 3px; }
+.faq-contact-text span { font-size: 0.76rem; color: var(--ink-muted); font-weight: 300; }
+.faq-contact-btn { padding: 9px 18px; background: var(--ink); color: var(--white); border-radius: 6px; font-size: 0.78rem; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background 0.2s; font-family: var(--f-body); border: none; cursor: pointer; display: inline-flex; }
+.faq-contact-btn:hover { background: var(--ink-light); }
+
+/* Subtle animations */
+@keyframes floatUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.bank-pill { animation: none; }
+.bank-pill:nth-child(1) { animation-delay: 0.05s; }
+.bank-pill:nth-child(2) { animation-delay: 0.10s; }
+.bank-pill:nth-child(3) { animation-delay: 0.15s; }
+.bank-pill:nth-child(4) { animation-delay: 0.20s; }
+.bank-pill:nth-child(5) { animation-delay: 0.25s; }
+.bank-pill:nth-child(6) { animation-delay: 0.30s; }
+.bank-pill:nth-child(7) { animation-delay: 0.35s; }
+.news-card:nth-child(1) { animation-delay: 0.05s; }
+.news-card:nth-child(2) { animation-delay: 0.12s; }
+.news-card:nth-child(3) { animation-delay: 0.19s; }
+
+@media(max-width: 960px) {
+  .news-grid { grid-template-columns: 1fr 1fr; }
+  .faq-layout { grid-template-columns: 1fr; gap: 44px; }
+  .faq-visual { display: none; }
+}
+@media(max-width: 600px) {
+  .news-grid { grid-template-columns: 1fr; }
+}
+
+/* Dual building image for news card 3 */
+.news-card-img-dual {
+  width: 100%; height: 200px; display: grid; grid-template-columns: 1fr 1fr;
+  overflow: hidden; position: relative;
+}
+.news-card-img-dual img {
+  width: 100%; height: 200px; object-fit: cover; display: block;
+  filter: saturate(0.80); transition: filter 0.35s ease;
+}
+.news-card:hover .news-card-img-dual img { filter: saturate(1); }
+.news-card-img-dual::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%);
+  pointer-events: none;
+}
+.news-card-img-dual-label {
+  position: absolute; bottom: 8px; left: 0; right: 0;
+  display: flex; justify-content: space-between; padding: 0 10px; pointer-events: none; z-index: 2;
+}
+.news-card-img-dual-label span {
+  background: rgba(28,43,58,0.75); color: var(--white); font-size: 0.58rem;
+  font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 3px; backdrop-filter: blur(4px);
+}
+
+/* MOBILE DRAWER */
+.mobile-drawer { display: none; position: fixed; top: 70px; left: 0; right: 0; z-index: 998; background: rgba(22,34,46,0.98); border-bottom: 1px solid rgba(184,151,90,0.12); padding: 14px 22px 22px; flex-direction: column; gap: 2px; }
+.mobile-drawer.open { display: flex; }
+.mobile-drawer a { color: rgba(255,255,255,0.70); text-decoration: none; font-size: 0.90rem; font-weight: 500; padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); transition: color 0.2s; }
+.mobile-drawer a:hover { color: var(--gold); }
+.mobile-drawer a:last-child { border: none; }
+
+/* RESPONSIVE */
+@media(max-width: 960px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 44px; }
+  .hero-panel { display: none; }
+  .steps-row { grid-template-columns: 1fr 1fr; }
+  .step:nth-child(2) { border-right: none; }
+  .step:nth-child(3) { border-right: 1px solid var(--border); border-top: 1px solid var(--border); }
+  .step:nth-child(4) { border-top: 1px solid var(--border); }
+  .services-inner, .about-grid, .premium-grid, .contact-grid { grid-template-columns: 1fr; gap: 44px; }
+  .about-photo-accent { display: none; }
+  .prem-card-overlay { display: none; }
+  .testi-grid { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr 1fr; }
+  .about-values { grid-template-columns: 1fr; }
+  .hamburger { display: flex; }
+  .nav-menu { display: none; }
+}
+@media(max-width: 600px) {
+  .container { padding: 0 20px; }
+  .nav-inner { padding: 0 20px; }
+  .hero-inner { padding: 120px 20px 80px; }
+  .form-row { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr; gap: 32px; }
+  .steps-row { grid-template-columns: 1fr; }
+  .step { border-right: none !important; border-bottom: 1px solid var(--border); }
+  .step:last-child { border-bottom: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">Ki<span>Bank</span></a>
+    <div class="nav-menu">
+      <a href="#hero" class="active">Início</a>
+      <a href="#buscar">Buscar Bancos</a>
+      <a href="#noticias">Notícias</a>
+      <a href="#servicos">Serviços</a>
+      <a href="#faq">FAQ</a>
+      <a href="#sobre">Sobre Nós</a>
+      <a href="#contato">Contacto</a>
+      <a href="login.html" class="nav-cta">Aceder à Plataforma</a>
+    </div>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</nav>
+
+<div class="mobile-drawer" id="drawer">
+  <a href="#hero" onclick="closeMenu()">Início</a>
+  <a href="#buscar" onclick="closeMenu()">Buscar Bancos</a>
+  <a href="#noticias" onclick="closeMenu()">Notícias</a>
+  <a href="#servicos" onclick="closeMenu()">Serviços</a>
+  <a href="#faq" onclick="closeMenu()">FAQ</a>
+  <a href="#sobre" onclick="closeMenu()">Sobre Nós</a>
+  <a href="#contato" onclick="closeMenu()">Contacto</a>
+  <a href="login.html">Aceder à Plataforma</a>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-photo"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-eyebrow">Plataforma de Monitorização Bancária</div>
+      <h1 class="hero-h1">Saiba o estado real<br>do seu banco <em>antes</em><br>de se deslocar</h1>
+      <p class="hero-p">KiBank agrega em tempo real a disponibilidade de serviços, lotação e funcionamento das principais agências e Multicaixas de Luanda — alimentado pela comunidade e verificado por especialistas.</p>
+      <div class="hero-actions">
+        <a href="login.html" class="btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Iniciar no Navegador
+        </a>
+        <a href="#" class="btn-store">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+          <span class="btn-store-text">
+            <small>Disponível em breve</small>
+            <strong>Google Play Store</strong>
+          </span>
+        </a>
+      </div>
+      <div class="hero-metrics">
+        <div><div class="metric-val">7<span>+</span></div><div class="metric-lbl">Bancos cobertos</div></div>
+        <div><div class="metric-val">26<span>+</span></div><div class="metric-lbl">Agências monitorizadas</div></div>
+        <div><div class="metric-val">10<span>+</span></div><div class="metric-lbl">Multicaixas</div></div>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <div class="panel-header">
+        <div class="panel-title">Estado em tempo real · Luanda</div>
+        <div class="panel-live">Ao Vivo</div>
+      </div>
+      <div class="panel-row">
+        <div class="p-dot" style="background:#4caf7d"></div>
+        <div><div class="p-name">BFA Sede Maianga</div><div class="p-sub">Rua Amílcar Cabral, Maianga</div></div>
+        <div class="p-badge b-ok">Operacional</div>
+      </div>
+      <div class="panel-row">
+        <div class="p-dot" style="background:#d4a040"></div>
+        <div><div class="p-name">BAI Torres Dipanda</div><div class="p-sub">Largo 17 de Setembro</div></div>
+        <div class="p-badge b-warn">Espera 45min</div>
+      </div>
+      <div class="panel-row">
+        <div class="p-dot" style="background:#4caf7d"></div>
+        <div><div class="p-name">ATM BIC Largo 4 Fevereiro</div><div class="p-sub">Maianga · Multicaixa</div></div>
+        <div class="p-badge b-ok">Com dinheiro</div>
+      </div>
+      <div class="panel-row">
+        <div class="p-dot" style="background:#d4706a"></div>
+        <div><div class="p-name">BPC Mutamba</div><div class="p-sub">Largo da Mutamba</div></div>
+        <div class="p-badge b-bad">Sistema lento</div>
+      </div>
+      <div class="panel-row">
+        <div class="p-dot" style="background:#4caf7d"></div>
+        <div><div class="p-name">Standard Bank Cidade Alta</div><div class="p-sub">Rua Amílcar Cabral, 58</div></div>
+        <div class="p-badge b-ok">Disponível</div>
+      </div>
+      <div class="panel-row">
+        <div class="p-dot" style="background:#d4a040"></div>
+        <div><div class="p-name">ATM BFA Shopping Belas</div><div class="p-sub">Talatona · Multicaixa</div></div>
+        <div class="p-badge b-warn">Fila média</div>
+      </div>
+      <div class="panel-footer">Actualizado às 14:32 · 142 votos hoje</div>
+    </div>
+  </div>
+</section>
+
+<!-- BANKS / SEARCH -->
+<div id="buscar">
+<section id="bancos">
+  <div class="container buscar-inner">
+    <div class="buscar-top">
+      <div class="banks-label">Bancos cobertos pela plataforma KiBank</div>
+      <div class="search-bar-wrap">
+        <input type="text" id="bank-search" placeholder="Pesquisar banco (ex: BFA, BAI, Standard...)" oninput="filterBanks(this.value)" autocomplete="off">
+        <svg class="search-bar-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setFilter('todos', this)">Todos</button>
+        <button class="filter-tab" onclick="setFilter('agencia', this)">Agências</button>
+        <button class="filter-tab" onclick="setFilter('multicaixa', this)">Multicaixa</button>
+        <button class="filter-tab" onclick="setFilter('online', this)">Online</button>
+      </div>
+    </div>
+    <div class="banks-row" id="banks-row">
+      <div class="bank-pill" data-name="bfa" data-full="banco de fomento angola" data-type="agencia multicaixa">
+        <img class="bank-logo-img" src="https://www.bfa.ao/favicon.ico" alt="BFA" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="bank-logo-fb" style="display:none;background:#003087">BFA</div>
+        <div><div class="bank-pill-name">BFA</div><div class="bank-pill-full">Banco de Fomento Angola</div></div>
+      </div>
+      <div class="bank-pill" data-name="bai" data-full="banco angolano de investimentos" data-type="agencia multicaixa online">
+        <img class="bank-logo-img" src="https://www.bancobai.ao/favicon.ico" alt="BAI" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="bank-logo-fb" style="display:none;background:#c8001e">BAI</div>
+        <div><div class="bank-pill-name">BAI</div><div class="bank-pill-full">Banco Angolano de Investimentos</div></div>
+      </div>
+      <div class="bank-pill" data-name="bic" data-full="banco bic angola" data-type="agencia multicaixa">
+        <img class="bank-logo-img" src="https://www.bic.ao/favicon.ico" alt="BIC" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="bank-logo-fb" style="display:none;background:#0059a8">BIC</div>
+        <div><div class="bank-pill-name">BIC</div><div class="bank-pill-full">Banco BIC Angola</div></div>
+      </div>
+      <div class="bank-pill" data-name="bpc" data-full="banco de poupanca e credito" data-type="agencia multicaixa">
+        <img class="bank-logo-img" src="https://www.bpc.ao/favicon.ico" alt="BPC" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="bank-logo-fb" style="display:none;background:#006633">BPC</div>
+        <div><div class="bank-pill-name">BPC</div><div class="bank-pill-full">Banco de Poupança e Crédito</div></div>
+      </div>
+      <div class="bank-pill" data-name="banco economico" data-full="banco economico angola" data-type="agencia">
+        <img class="bank-logo-img" src="https://www.bancoeconomico.ao/favicon.ico" alt="BE" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="bank-logo-fb" style="display:none;background:#a00010">BE</div>
+        <div><div class="bank-pill-name">Banco Económico</div><div class="bank-pill-full">Banco Económico Angola</div></div>
+      </div>
+      <div class="bank-pill" data-name="standard bank" data-full="standard bank angola" data-type="agencia multicaixa online">
+        <img class="bank-logo-img" src="https://www.standardbank.ao/favicon.ico" alt="STD" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="bank-logo-fb" style="display:none;background:#1a3591">STD</div>
+        <div><div class="bank-pill-name">Standard Bank</div><div class="bank-pill-full">Standard Bank Angola</div></div>
+      </div>
+      <div class="bank-pill" data-name="millennium atlantico" data-full="millennium atlantico" data-type="agencia online">
+        <img class="bank-logo-img" src="https://www.millenniumbim.ao/favicon.ico" alt="MIL" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="bank-logo-fb" style="display:none;background:#002d72">MIL</div>
+        <div><div class="bank-pill-name">Millennium</div><div class="bank-pill-full">Millennium Atlântico</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- NEWS -->
+<section id="noticias" class="reveal">
+  <div class="container">
+    <div class="s-head center reveal">
+      <span class="tag">Notícias & Panorama</span>
+      <h2 class="s-title">Actualidade do sector bancário angolano</h2>
+      <p class="s-sub">Acompanhe as últimas novidades sobre o sistema bancário, regulação e inovação financeira em Angola.</p>
+    </div>
+    <div class="news-grid">
+      <div class="news-card reveal">
+        <img class="news-card-img" src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=700&q=80&auto=format&fit=crop&crop=center" alt="Regulação bancária Angola" loading="lazy">
+        <div class="news-card-body">
+          <span class="news-cat news-cat-regulacao">Regulação</span>
+          <div class="news-title">BNA aprova novas directrizes para digitalização dos serviços bancários em 2025</div>
+          <p class="news-excerpt">O Banco Nacional de Angola publicou um conjunto de orientações que obrigam as instituições financeiras a disponibilizar canais digitais com maior resiliência e tempo de resposta garantido, reforçando a protecção do consumidor.</p>
+          <div class="news-footer">
+            <span class="news-date">18 Fev 2025</span>
+            <a href="#" class="news-link">Ler mais <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+          </div>
+        </div>
+      </div>
+      <div class="news-card reveal">
+        <img class="news-card-img" src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=700&q=80&auto=format&fit=crop&crop=center" alt="Pagamento digital mobile Angola" loading="lazy">
+        <div class="news-card-body">
+          <span class="news-cat news-cat-digital">Digital</span>
+          <div class="news-title">BAI lança aplicação mobile com funcionalidade de pagamento por QR Code em Luanda</div>
+          <p class="news-excerpt">O Banco Angolano de Investimentos lançou a nova versão da sua aplicação com integração de pagamentos por QR Code, disponível em todos os estabelecimentos aderentes ao Multicaixa Express na capital.</p>
+          <div class="news-footer">
+            <span class="news-date">11 Fev 2025</span>
+            <a href="#" class="news-link">Ler mais <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+          </div>
+        </div>
+      </div>
+      <div class="news-card reveal">
+        <div class="news-card-img-dual">
+          <img src="https://engexpor.com/wp-content/uploads/2018/10/engexpor_retail_bancofomentoangola_1.jpg" alt="Sede BFA Luanda" loading="lazy">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Banco_BPC_Luanda.JPG/800px-Banco_BPC_Luanda.JPG" alt="Sede BPC Luanda" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&q=80&auto=format&fit=crop&crop=left'">
+          <div class="news-card-img-dual-label">
+            <span>BFA · Maianga</span>
+            <span>BPC · Mutamba</span>
+          </div>
+        </div>
+        <div class="news-card-body">
+          <span class="news-cat news-cat-banca">Banca</span>
+          <div class="news-title">BFA e BPC anunciam expansão com novas agências nos municípios periféricos de Luanda</div>
+          <p class="news-excerpt">O BFA e o BPC vão abrir um total de oito novas agências até ao final de 2025 nos municípios de Viana, Cacuaco e Cazenga, visando reduzir a pressão sobre as agências do centro e melhorar a cobertura bancária.</p>
+          <div class="news-footer">
+            <span class="news-date">4 Fev 2025</span>
+            <a href="#" class="news-link">Ler mais <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="reveal">
+  <div class="container">
+    <div class="faq-layout">
+      <div class="faq-visual-col reveal">
+        <div class="faq-visual">
+          <img class="faq-visual-img" src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=700&q=80&auto=format&fit=crop&crop=top" alt="Apoio ao cliente KiBank">
+          <div class="faq-visual-badge">FAQ</div>
+          <div class="faq-visual-overlay">
+            <div class="faq-visual-stat">4</div>
+            <div class="faq-visual-stat-sub">Respostas às perguntas mais frequentes</div>
+          </div>
+        </div>
+      </div>
+      <div class="faq-side reveal">
+        <div class="s-head" style="margin-bottom:32px">
+          <span class="tag">Perguntas Frequentes</span>
+          <h2 class="s-title">Tem dúvidas? Respondemos.</h2>
+          <p class="s-sub">Tudo o que precisa de saber sobre como o KiBank funciona e como pode tirar o máximo partido da plataforma.</p>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Como é que o KiBank obtém as informações sobre o estado dos bancos?
+            <span class="faq-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-a">
+            <div class="faq-a-inner">A versão gratuita baseia-se num modelo de votação comunitária: os utilizadores registam o estado das agências após as suas visitas. A versão Premium conta com uma equipa dedicada que verifica os dados directamente junto das agências, garantindo informação fiável sem depender de votos.</div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            O KiBank é completamente gratuito? Existem limitações?
+            <span class="faq-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-a">
+            <div class="faq-a-inner">Sim, o KiBank é gratuito e não exige qualquer registo para consultar o estado das agências através da votação comunitária. A versão Premium oferece dados verificados, acesso a agências específicas e ausência de publicidade, para quem precisa de informação mais rigorosa.</div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Com que frequência são actualizadas as informações na plataforma?
+            <span class="faq-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-a">
+            <div class="faq-a-inner">As informações da versão comunitária são actualizadas em tempo real à medida que os utilizadores registam novas informações. Na versão Premium, a equipa KiBank verifica e actualiza os dados em intervalos regulares ao longo do dia útil, normalmente a cada 30 a 60 minutos por agência.</div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Posso reportar informação incorrecta que vi numa agência?
+            <span class="faq-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          </button>
+          <div class="faq-a">
+            <div class="faq-a-inner">Absolutamente. A participação da comunidade é o coração do KiBank. Pode registar o estado real de uma agência directamente na plataforma, ou contactar-nos via email ou formulário de contacto para reportar inconsistências graves. A sua contribuição melhora a experiência de todos os utilizadores.</div>
+          </div>
+        </div>
+
+        <div class="faq-contact-box">
+          <div class="faq-contact-icon">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div class="faq-contact-text">
+            <strong>Não encontrou resposta?</strong>
+            <span>A nossa equipa responde em até 24h úteis.</span>
+          </div>
+          <button class="faq-contact-btn" onclick="document.getElementById('contato').scrollIntoView({behavior:'smooth'})">Contactar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="como-funciona" class="s-pad">
+  <div class="container">
+    <div class="s-head center reveal">
+      <span class="tag">Como Funciona</span>
+      <h2 class="s-title">Quatro passos para poupar tempo</h2>
+      <p class="s-sub">Sem necessidade de registo. Aceda directamente, consulte o estado e tome decisões informadas antes de se deslocar a qualquer agência.</p>
+    </div>
+    <div class="steps-row reveal">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-icon-wrap"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div class="step-title">Seleccione o banco</div>
+        <p class="step-desc">Escolha entre os 7 principais bancos comerciais de Angola presentes na plataforma.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-icon-wrap"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <div class="step-title">Localize a agência</div>
+        <p class="step-desc">Veja todas as agências e Multicaixas disponíveis com morada e bairro em Luanda.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-icon-wrap"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="step-title">Consulte o estado</div>
+        <p class="step-desc">Verifique lotação, tempo de espera, sistema operacional e disponibilidade de serviços.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-icon-wrap"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg></div>
+        <div class="step-title">Vote e contribua</div>
+        <p class="step-desc">Após a sua visita, registe o estado real. O seu contributo ajuda toda a comunidade angolana.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="servicos" class="s-pad">
+  <div class="container">
+    <div class="services-inner">
+      <div class="services-text reveal">
+        <span class="tag">Serviços</span>
+        <h2 class="s-title">Tudo o que precisa de saber antes de ir ao banco</h2>
+        <p class="s-sub">KiBank consolida as informações mais críticas para qualquer utilizador de serviços bancários em Angola.</p>
+        <div class="service-cards">
+          <div class="svc-card">
+            <div class="svc-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+            <div><div class="svc-title">Estado do Sistema Bancário</div><div class="svc-desc">Monitorização em tempo real se o sistema da agência está operacional, com lentidão ou fora de serviço.</div></div>
+          </div>
+          <div class="svc-card">
+            <div class="svc-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div><div class="svc-title">Lotação e Tempo de Espera</div><div class="svc-desc">Informação comunitária sobre o número de pessoas em fila e estimativa do tempo de atendimento.</div></div>
+          </div>
+          <div class="svc-card">
+            <div class="svc-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+            <div><div class="svc-title">Emissão de Cartões</div><div class="svc-desc">Verifique se a agência está disponível para emissão de cartão de débito ou crédito no dia que planeia visitar.</div></div>
+          </div>
+          <div class="svc-card">
+            <div class="svc-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+            <div><div class="svc-title">Disponibilidade nos Multicaixas</div><div class="svc-desc">Confirme se o Multicaixa tem dinheiro disponível, papel e está em funcionamento antes de se deslocar.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="services-dash">
+          <div class="dash-head">
+            <div><div class="dash-bank-name">BAI — Torres Dipanda</div><div class="dash-branch">Largo 17 de Setembro · Maianga</div></div>
+            <div class="dash-live">Ao Vivo</div>
+          </div>
+          <div>
+            <div class="dash-item"><div class="d-dot" style="background:#4caf7d"></div><div class="d-label">Sistema operacional</div><div class="d-badge b-ok">Operacional</div></div>
+            <div class="dash-item"><div class="d-dot" style="background:#d4a040"></div><div class="d-label">Lotação actual</div><div class="d-badge b-warn">Média</div></div>
+            <div class="dash-item"><div class="d-dot" style="background:#d4a040"></div><div class="d-label">Tempo de espera</div><div class="d-badge b-warn">30 – 60 min</div></div>
+            <div class="dash-item"><div class="d-dot" style="background:#4caf7d"></div><div class="d-label">Emissão de cartão débito</div><div class="d-badge b-ok">Disponível</div></div>
+            <div class="dash-item"><div class="d-dot" style="background:#d4706a"></div><div class="d-label">Emissão de cartão crédito</div><div class="d-badge b-bad">Indisponível</div></div>
+            <div class="dash-item"><div class="d-dot" style="background:#4caf7d"></div><div class="d-label">Atendimento de caixa</div><div class="d-badge b-ok">Disponível</div></div>
+            <div class="dash-item"><div class="d-dot" style="background:#4caf7d"></div><div class="d-label">Actualização de dados</div><div class="d-badge b-ok">Disponível</div></div>
+          </div>
+          <div class="dash-foot"><span>Actualizado às 14:18</span><span>38 contribuições hoje</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="sobre" class="s-pad">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-photo-wrap reveal">
+        <img class="about-photo" src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&q=80&auto=format&fit=crop" alt="Serviços bancários Angola">
+        <div class="about-photo-accent">
+          <img src="https://images.unsplash.com/photo-1556742031-c6961e8560b0?w=500&q=80&auto=format&fit=crop" alt="Multicaixa Angola">
+        </div>
+      </div>
+      <div class="about-text reveal">
+        <span class="tag">Sobre Nós</span>
+        <h2 class="s-title">Nascemos da frustração de quem usa bancos em Angola</h2>
+        <p>Quantas vezes chegou a uma agência bancária apenas para descobrir que o sistema estava fora de serviço? Ou esperou mais de duas horas numa fila que poderia ter evitado?</p>
+        <p>A <strong>KiBank</strong> surgiu para resolver exactamente esse problema. Somos uma plataforma criada por angolanos para angolanos, com o objectivo de democratizar o acesso à informação sobre os serviços bancários em Luanda.</p>
+        <p>Através de um modelo híbrido — votação comunitária para a versão gratuita e dados verificados para a versão Premium — fornecemos uma visão actualizada e fiável do estado dos bancos em tempo real.</p>
+        <div class="about-values">
+          <div class="about-val"><div class="about-val-title">Transparência</div><div class="about-val-desc">Informação clara, sem filtros, baseada em contribuições reais da comunidade.</div></div>
+          <div class="about-val"><div class="about-val-title">Comunidade</div><div class="about-val-desc">Alimentado por utilizadores reais que partilham experiências genuínas.</div></div>
+          <div class="about-val"><div class="about-val-title">Rigor</div><div class="about-val-desc">Dados verificados por uma equipa dedicada na versão Premium.</div></div>
+          <div class="about-val"><div class="about-val-title">Acessibilidade</div><div class="about-val-desc">Disponível no navegador, sem instalação ou registo obrigatório.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PREMIUM -->
+<section id="premium" class="s-pad">
+  <div class="container">
+    <div class="premium-grid">
+      <div class="premium-text reveal">
+        <span class="tag">Acesso Premium</span>
+        <h2 class="s-title">Dados verificados.<br>Sem depender de votos.</h2>
+        <p class="s-sub">A versão Premium foi criada para quem não pode arriscar uma deslocação com base em informação não confirmada. A nossa equipa actualiza os dados directamente junto das agências.</p>
+        <div class="premium-feature-list">
+          <div class="pf-row"><div class="pf-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pf-text">Estado verificado por agência, actualizado pela equipa KiBank</div></div>
+          <div class="pf-row"><div class="pf-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pf-text">Disponibilidade de Multicaixas confirmada directamente</div></div>
+          <div class="pf-row"><div class="pf-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pf-text">Tempo de espera actualizado sem depender de votações</div></div>
+          <div class="pf-row"><div class="pf-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pf-text">Acesso exclusivo às agências do seu banco</div></div>
+          <div class="pf-row"><div class="pf-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pf-text">Confirmação de emissão de cartões antes da visita</div></div>
+          <div class="pf-row"><div class="pf-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pf-text">Plataforma sem publicidade e sem limitações de consulta</div></div>
+        </div>
+        <div class="premium-cta-area">
+          <a href="login.html" class="btn-ink">Activar Acesso Premium</a>
+          <button class="btn-ghost" onclick="document.getElementById('contato').scrollIntoView({behavior:'smooth'})">Saber mais</button>
+        </div>
+      </div>
+      <div class="premium-photo-col reveal">
+        <img class="prem-main-img" src="https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=700&q=80&auto=format&fit=crop" alt="Premium banking service">
+        <div class="prem-card-overlay">
+          <div class="prem-card-label">Estado Premium Verificado</div>
+          <div class="prem-item"><div class="pi-dot" style="background:#2E7D54"></div><div class="pi-name">Sistema</div><div class="pi-status pi-ok">Operacional</div></div>
+          <div class="prem-item"><div class="pi-dot" style="background:#A07C2A"></div><div class="pi-name">Lotação</div><div class="pi-status pi-warn">Alta</div></div>
+          <div class="prem-item"><div class="pi-dot" style="background:#2E7D54"></div><div class="pi-name">Cartão Débito</div><div class="pi-status pi-ok">Disponível</div></div>
+          <div class="prem-item"><div class="pi-dot" style="background:#B03030"></div><div class="pi-name">Cartão Crédito</div><div class="pi-status pi-bad">Indisponível</div></div>
+          <div class="prem-item"><div class="pi-dot" style="background:#2E7D54"></div><div class="pi-name">Caixa</div><div class="pi-status pi-ok">Disponível</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testemunhos" class="s-pad">
+  <div class="container">
+    <div class="s-head center reveal">
+      <span class="tag">Testemunhos</span>
+      <h2 class="s-title">O que dizem os utilizadores</h2>
+      <p class="s-sub">Experiências reais de quem já utiliza o KiBank no quotidiano em Luanda.</p>
+    </div>
+    <div class="testi-grid reveal">
+      <div class="testi-card">
+        <div class="testi-stars"><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="testi-quote">Antes ia ao BFA Maianga sem qualquer informação e encontrava o sistema fora de serviço. Com o KiBank, confirmo antes de sair. Poupei inúmeras horas desde que comecei a utilizar.</p>
+        <div class="testi-author"><div class="testi-avatar">MK</div><div><div class="testi-name">Manuel Kitambala</div><div class="testi-role">Empresário · Maianga, Luanda</div></div></div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars"><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="testi-quote">Trabalho no centro de Luanda e não tenho tempo para filas de duas horas. O KiBank diz-me qual Multicaixa tem dinheiro disponível perto do meu escritório. Uma ferramenta indispensável.</p>
+        <div class="testi-author"><div class="testi-avatar">AC</div><div><div class="testi-name">Ana Cláudia Teixeira</div><div class="testi-role">Engenheira Civil · Talatona</div></div></div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars"><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg class="star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <p class="testi-quote">A versão Premium é exactamente o que precisava como gestor financeiro. Informação verificada, sem ruído. Sei o estado real do BAI antes de enviar os meus colaboradores ao banco.</p>
+        <div class="testi-author"><div class="testi-avatar">JL</div><div><div class="testi-name">João Lopes Neto</div><div class="testi-role">Gestor Financeiro · Alvalade</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="comecar" class="s-pad">
+  <div class="container">
+    <div class="cta-wrap reveal">
+      <span class="tag" style="color:var(--gold-lt)">Comece Hoje</span>
+      <h2 class="s-title">Deixe de perder tempo em filas evitáveis</h2>
+      <p class="s-sub">Aceda à plataforma directamente no seu navegador — sem instalação, sem registo obrigatório. Gratuito para toda a comunidade.</p>
+      <div class="cta-btns">
+        <a href="login.html" class="btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Aceder à Plataforma
+        </a>
+        <a href="#" class="btn-store">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+          <span class="btn-store-text"><small>Em breve</small><strong>Google Play Store</strong></span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contato" class="s-pad">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info reveal">
+        <span class="tag">Contacto</span>
+        <h2 class="s-title">Fale connosco</h2>
+        <p class="s-sub">Para parcerias, sugestões, reportar informação incorrecta ou questões sobre o acesso Premium, entre em contacto com a nossa equipa.</p>
+        <div class="contact-item"><div class="ci-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><div><div class="ci-label">Email</div><div class="ci-val"><a href="mailto:suporte@kibank.ao">suporte@kibank.ao</a></div></div></div>
+        <div class="contact-item"><div class="ci-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.18 19.79 19.79 0 012 2.35 2 2 0 013.07.35h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.73 14l.19 2.92z"/></svg></div><div><div class="ci-label">Telefone</div><div class="ci-val">+244 923 000 000</div></div></div>
+        <div class="contact-item"><div class="ci-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div><div class="ci-label">Localização</div><div class="ci-val">Luanda, Angola</div></div></div>
+        <div class="contact-item"><div class="ci-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div class="ci-label">Horário de Resposta</div><div class="ci-val">Segunda a Sexta, 08:00 – 17:00</div></div></div>
+      </div>
+      <div class="contact-form reveal">
+        <div class="form-row">
+          <div class="form-group"><label>Nome</label><input type="text" placeholder="O seu nome completo"></div>
+          <div class="form-group"><label>Email</label><input type="email" placeholder="email@exemplo.com"></div>
+        </div>
+        <div class="form-group"><label>Assunto</label><select><option value="">Seleccione o assunto</option><option>Acesso Premium</option><option>Reportar informação incorrecta</option><option>Parceria bancária</option><option>Sugestão de melhoria</option><option>Suporte técnico</option><option>Outro</option></select></div>
+        <div class="form-group"><label>Mensagem</label><textarea placeholder="Descreva o seu pedido ou comentário..."></textarea></div>
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="handleContact(event)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Enviar Mensagem
+        </button>
+        <div id="form-msg" style="display:none;margin-top:14px;padding:12px 16px;border-radius:7px;font-size:0.84rem;background:#EDF7F1;color:#2E7D54;border:1px solid #c3e6cb">Mensagem enviada com sucesso. Respondemos em até 24 horas úteis.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo">Ki<span>Bank</span></a>
+        <p>Plataforma comunitária de monitorização do estado dos serviços bancários em Angola. Feito por angolanos, para angolanos.</p>
+      </div>
+      <div class="footer-col">
+        <h6>Plataforma</h6>
+        <a href="login.html">Versão Web</a>
+        <a href="#">Google Play (em breve)</a>
+        <a href="#premium">Acesso Premium</a>
+        <a href="#como-funciona">Como Funciona</a>
+      </div>
+      <div class="footer-col">
+        <h6>Bancos</h6>
+        <a href="#">BFA · Banco de Fomento Angola</a>
+        <a href="#">BAI · Banco Angolano de Investimentos</a>
+        <a href="#">BIC · Banco BIC Angola</a>
+        <a href="#">BPC · Banco de Poupança e Crédito</a>
+        <a href="#">Standard Bank Angola</a>
+        <a href="#">Millennium Atlântico</a>
+      </div>
+      <div class="footer-col">
+        <h6>Empresa</h6>
+        <a href="#sobre">Sobre Nós</a>
+        <a href="#contato">Contacto</a>
+        <a href="#">Política de Privacidade</a>
+        <a href="#">Termos de Utilização</a>
+        <a href="#">Imprensa</a>
+      </div>
+    </div>
+    <div class="footer-divider"></div>
+    <div class="footer-bottom">
+      <span>© 2025 KiBank — Todos os direitos reservados</span>
+      <span>Desenvolvido em <a href="#">Luanda, Angola</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const revealEls = document.querySelectorAll('.reveal');
+const ro = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('in'), i * 80); ro.unobserve(e.target); } });
+}, { threshold: 0.08 });
+revealEls.forEach(el => ro.observe(el));
+
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 70);
+});
+
+const sections = document.querySelectorAll('section[id], div[id]');
+const navLinks = document.querySelectorAll('.nav-menu a:not(.nav-cta)');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 100) current = s.id; });
+  navLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+}, { passive: true });
+
+function toggleMenu() { document.getElementById('drawer').classList.toggle('open'); }
+function closeMenu() { document.getElementById('drawer').classList.remove('open'); }
+document.addEventListener('click', (e) => {
+  const d = document.getElementById('drawer'); const h = document.getElementById('hamburger');
+  if (!d.contains(e.target) && !h.contains(e.target)) d.classList.remove('open');
+});
+
+function handleContact(e) {
+  e.preventDefault();
+  const m = document.getElementById('form-msg');
+  m.style.display = 'block';
+  setTimeout(() => m.style.display = 'none', 5000);
+}
+
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// FAQ accordion
+function toggleFaq(btn) {
+  const answer = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  document.querySelectorAll('.faq-q.open').forEach(b => {
+    b.classList.remove('open');
+    b.nextElementSibling.classList.remove('open');
+  });
+  if (!isOpen) {
+    btn.classList.add('open');
+    answer.classList.add('open');
+  }
+}
+
+// Bank search & filter
+let currentFilter = 'todos';
+function filterBanks(query) {
+  const pills = document.querySelectorAll('.bank-pill');
+  const q = query.toLowerCase().trim();
+  pills.forEach(p => {
+    const name = p.dataset.name || '';
+    const full = p.dataset.full || '';
+    const type = p.dataset.type || '';
+    const matchQuery = !q || name.includes(q) || full.includes(q);
+    const matchFilter = currentFilter === 'todos' || type.includes(currentFilter);
+    p.classList.toggle('hidden', !(matchQuery && matchFilter));
+  });
+}
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  filterBanks(document.getElementById('bank-search').value);
+}
+
+</script>
+</body>
+</html>

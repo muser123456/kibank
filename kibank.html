@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KiBank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ─────────────────────────────────────────────────────────────────
+   TOKENS
+───────────────────────────────────────────────────────────────── */
+:root {
+  --navy:      #0B1825;
+  --navy-90:   #0f2030;
+  --navy-70:   #1C3347;
+  --navy-50:   #2E4F68;
+  --navy-30:   #4A7090;
+  --navy-10:   #8AAEC5;
+  --gold:      #B8974A;
+  --gold-dim:  rgba(184,151,74,.12);
+  --surface:   #F4F5F7;
+  --white:     #FFFFFF;
+  --line:      #E4E8ED;
+  --line-soft: #EEF1F5;
+  --green:     #1E8A5E;
+  --green-bg:  rgba(30,138,94,.08);
+  --amber:     #9A6B0A;
+  --amber-bg:  rgba(154,107,10,.08);
+  --red:       #B03333;
+  --red-bg:    rgba(176,51,51,.08);
+  --text:      #0B1825;
+  --text-2:    #3A5568;
+  --text-3:    #7A96A8;
+  --sidebar:   56px;
+  --r:         8px;
+  --f-head: 'Sora', system-ui, sans-serif;
+  --f-body: 'DM Sans', system-ui, sans-serif;
+  --f-mono: 'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: var(--f-body);
+  background: var(--surface);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button { cursor: pointer; font-family: var(--f-body); }
+a { text-decoration: none; }
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+
+/* ─────────────────────────────────────────────────────────────────
+   SIDEBAR
+───────────────────────────────────────────────────────────────── */
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--sidebar);
+  background: var(--navy);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 14px 0 16px;
+  z-index: 700;
+  border-right: 1px solid rgba(255,255,255,.04);
+}
+
+.sb-logo {
+  width: 32px; height: 32px; border-radius: 7px;
+  background: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 28px; flex-shrink: 0;
+}
+.sb-logo span {
+  font-family: var(--f-head);
+  font-weight: 700; font-size: .85rem;
+  color: var(--navy);
+}
+
+.sb-nav { display: flex; flex-direction: column; gap: 2px; align-items: center; flex: 1; width: 100%; }
+
+.sb-btn {
+  position: relative;
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: none; border: none;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.3);
+  transition: color .15s, background .15s;
+}
+.sb-btn:hover { color: rgba(255,255,255,.7); background: rgba(255,255,255,.05); }
+.sb-btn.active { color: rgba(255,255,255,.9); background: rgba(255,255,255,.07); }
+.sb-btn.active::before {
+  content: '';
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 18px;
+  background: var(--gold);
+  border-radius: 0 2px 2px 0;
+}
+.sb-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+.sb-tooltip {
+  position: absolute; left: 52px; top: 50%; transform: translateY(-50%);
+  background: var(--navy-70); color: rgba(255,255,255,.85);
+  font-size: .72rem; font-weight: 500; white-space: nowrap;
+  padding: 5px 10px; border-radius: 5px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+  z-index: 800;
+}
+.sb-btn:hover .sb-tooltip { opacity: 1; }
+
+.sb-spacer { flex: 1; }
+
+.sb-premium {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--gold-dim);
+  border: 1px solid rgba(184,151,74,.2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold); transition: background .15s;
+}
+.sb-premium:hover { background: rgba(184,151,74,.2); }
+.sb-premium svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ─────────────────────────────────────────────────────────────────
+   PROFILE SLIDE PANEL
+───────────────────────────────────────────────────────────────── */
+.profile-edge {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 12px; z-index: 700;
+}
+.profile-panel {
+  position: fixed; top: 0; right: -270px; bottom: 0; width: 258px;
+  background: var(--navy);
+  border-left: 1px solid rgba(255,255,255,.05);
+  z-index: 700;
+  transition: right .22s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column;
+  padding: 28px 18px 20px;
+}
+.profile-panel.open { right: 0; }
+.pp-av {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--navy-70), var(--navy-50));
+  border: 1.5px solid rgba(184,151,74,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-head); font-size: .78rem; font-weight: 600; color: #fff;
+  margin-bottom: 10px;
+}
+.pp-name { font-family: var(--f-head); font-size: .82rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
+.pp-level { font-size: .68rem; color: var(--navy-10); margin-bottom: 24px; }
+.pp-divider { height: 1px; background: rgba(255,255,255,.06); margin-bottom: 16px; }
+.pp-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 6px;
+  font-size: .76rem; color: rgba(255,255,255,.45);
+  background: none; border: none; width: 100%; text-align: left;
+  transition: .15s; margin-bottom: 2px;
+}
+.pp-item:hover { color: rgba(255,255,255,.82); background: rgba(255,255,255,.05); }
+.pp-item svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; flex-shrink: 0; }
+.pp-info-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:4px; }
+.pp-info-item { display:flex; flex-direction:column; gap:2px; }
+.pp-info-lbl { font-size:.58rem; text-transform:uppercase; letter-spacing:.8px; color:rgba(255,255,255,.28); }
+.pp-info-val { font-size:.72rem; color:rgba(255,255,255,.72); font-weight:400; }
+.pp-verified { color:var(--green)!important; }
+.pp-contrib-block { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+.pp-contrib-row { display:flex; align-items:center; justify-content:space-between; }
+.pp-contrib-count { font-family:var(--f-mono); font-size:.82rem; font-weight:600; color:#fff; }
+.pp-contrib-when { font-size:.7rem; color:rgba(255,255,255,.55); }
+.pp-logout {
+  margin-top: auto;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 6px;
+  font-size: .76rem; color: rgba(180,80,80,.6);
+  background: none; border: none; width: 100%; text-align: left;
+  transition: .15s;
+}
+.pp-logout:hover { color: rgba(200,80,80,.9); background: rgba(180,80,80,.06); }
+.pp-logout svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────────────────────────
+   APP SHELL
+───────────────────────────────────────────────────────────────── */
+.shell { margin-left: var(--sidebar); min-height: 100vh; display: flex; flex-direction: column; }
+
+/* TOPBAR */
+.topbar {
+  position: sticky; top: 0; z-index: 600;
+  height: 52px;
+  background: rgba(244,245,247,.92); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; padding: 0 28px; gap: 16px;
+}
+.search {
+  flex: 1; max-width: 400px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 7px; height: 34px; padding: 0 12px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.search:focus-within {
+  border-color: var(--navy-30);
+  box-shadow: 0 0 0 3px rgba(15,32,48,.07);
+}
+.search svg { width: 13px; height: 13px; stroke: var(--text-3); fill: none; stroke-width: 2; flex-shrink: 0; }
+.search input {
+  border: none; background: none; outline: none;
+  font-family: var(--f-body); font-size: .8rem; color: var(--text);
+  width: 100%;
+}
+.search input::placeholder { color: rgba(122,150,168,.5); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.contrib-btn {
+  display: flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 14px;
+  background: var(--navy); color: rgba(255,255,255,.85);
+  border: none; border-radius: 6px;
+  font-size: .75rem; font-weight: 500;
+  transition: background .15s;
+}
+.contrib-btn:hover { background: var(--navy-70); }
+.contrib-btn svg { width: 12px; height: 12px; stroke: var(--gold); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tb-av {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--navy-70);
+  border: 1.5px solid rgba(184,151,74,.25);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-head); font-size: .65rem; font-weight: 600; color: rgba(255,255,255,.8);
+}
+
+/* SERVICE FILTER ROW */
+.service-row {
+  background: var(--white);
+  border-bottom: 1px solid var(--line);
+  padding: 0 28px; height: 44px;
+  display: flex; align-items: center; gap: 4px;
+  overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none;
+}
+.service-row::-webkit-scrollbar { display: none; }
+.svc-label { font-size: .65rem; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-right: 12px; white-space: nowrap; flex-shrink: 0; }
+.svc-pill {
+  display: flex; align-items: center; gap: 5px;
+  height: 26px; padding: 0 11px; border-radius: 13px;
+  border: 1px solid var(--line); background: transparent;
+  font-size: .72rem; font-weight: 400; color: var(--text-2);
+  white-space: nowrap; flex-shrink: 0;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.svc-pill:hover { border-color: var(--navy-30); color: var(--text); }
+.svc-pill.active {
+  border-color: var(--navy);
+  background: var(--navy); color: rgba(255,255,255,.85);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   MAIN LAYOUT
+───────────────────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 0;
+  padding: 0;
+}
+
+/* MAP AREA */
+.map-area {
+  display: flex; flex-direction: column;
+  padding: 20px 20px 20px 28px;
+  border-right: 1px solid var(--line);
+}
+.map-wrap {
+  position: relative;
+  border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--line);
+  flex: 1; min-height: 480px;
+}
+#map { width: 100%; height: 100%; min-height: 480px; }
+.map-chip {
+  position: absolute; bottom: 12px; left: 12px; z-index: 400;
+  background: rgba(11,24,37,.85); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 6px; padding: 5px 11px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: .67rem; color: rgba(255,255,255,.55);
+  pointer-events: none;
+}
+.live-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+  animation: blink 2.4s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+.map-status-bar {
+  margin-top: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+}
+.ms-label { font-size: .69rem; color: var(--text-3); }
+.ms-label strong { color: var(--text-2); font-weight: 500; }
+.ms-nearby {
+  display: flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 12px;
+  background: var(--white); border: 1px solid var(--line);
+  border-radius: 6px; font-size: .72rem; color: var(--text-2);
+  transition: border-color .15s;
+}
+.ms-nearby:hover { border-color: var(--navy-30); color: var(--text); }
+.ms-nearby svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* SIDEBAR PANEL (RIGHT) */
+.side-panel {
+  padding: 20px 20px 20px 20px;
+  display: flex; flex-direction: column; gap: 0;
+  overflow-y: auto; max-height: calc(100vh - 52px - 44px);
+  position: sticky; top: calc(52px + 44px);
+}
+
+/* NETWORK INDEX */
+.index-card {
+  background: var(--navy);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.ic-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.ic-meta { font-size: .62rem; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,.28); margin-bottom: 3px; }
+.ic-title { font-family: var(--f-head); font-size: .85rem; font-weight: 500; color: rgba(255,255,255,.82); }
+.ic-ring { position: relative; width: 58px; height: 58px; flex-shrink: 0; }
+.ic-ring svg { width: 58px; height: 58px; transform: rotate(-90deg); }
+.ic-rb { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 4; }
+.ic-rf { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+.ic-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ic-num { font-family: var(--f-head); font-size: 1.05rem; font-weight: 600; color: #fff; line-height: 1; }
+.ic-den { font-size: .48rem; color: rgba(255,255,255,.25); margin-top: 1px; }
+.ic-bars { display: flex; flex-direction: column; gap: 5px; }
+.ic-bar-row { display: flex; align-items: center; gap: 8px; }
+.ic-bar-name { font-size: .64rem; color: rgba(255,255,255,.38); width: 88px; flex-shrink: 0; }
+.ic-bar-wrap { flex: 1; height: 2px; background: rgba(255,255,255,.08); border-radius: 1px; overflow: hidden; }
+.ic-bar-fill { height: 100%; border-radius: 1px; }
+.ic-bar-val { font-family: var(--f-mono); font-size: .58rem; color: rgba(255,255,255,.38); width: 28px; text-align: right; flex-shrink: 0; }
+.ic-footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.05); display: flex; align-items: center; gap: 5px; font-size: .67rem; color: rgba(255,255,255,.32); }
+.ic-trend { color: var(--green); font-weight: 500; }
+
+/* HOUR CHART */
+.hour-card {
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 14px; margin-bottom: 12px;
+}
+.hc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.hc-title { font-family: var(--f-head); font-size: .8rem; font-weight: 600; color: var(--text); }
+.hc-badge { font-size: .62rem; padding: 2px 8px; border-radius: 4px; background: var(--green-bg); color: var(--green); font-weight: 500; }
+.hc-chart-wrap { position:relative; width:100%; }
+.hc-chart-wrap svg { display:block; width:100%; }
+.hc-note { font-size: .62rem; color: var(--text-3); line-height: 1.5; margin-top: 6px; display:flex; align-items:center; justify-content:space-between; }
+.hc-closed { font-size:.6rem; color:var(--red); font-weight:500; }
+
+/* ─────────────────────────────────────────────────────────────────
+   BANK TABLE
+───────────────────────────────────────────────────────────────── */
+.bottom { padding: 0 28px 48px 28px; max-width: none; }
+.bt-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 0 12px;
+}
+.bt-title { font-family: var(--f-head); font-size: .88rem; font-weight: 600; color: var(--text); }
+.bt-count { font-size: .72rem; color: var(--text-3); }
+.bt-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 0; }
+.bt-tab {
+  padding: 8px 16px; font-size: .74rem; font-weight: 400; color: var(--text-3);
+  background: none; border: none; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: .15s;
+}
+.bt-tab:hover { color: var(--text-2); }
+.bt-tab.active { color: var(--text); font-weight: 500; border-bottom-color: var(--navy); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* TABLE */
+.bank-table { width: 100%; border-collapse: collapse; }
+.bank-table thead tr {
+  border-bottom: 1px solid var(--line);
+}
+.bank-table th {
+  text-align: left; padding: 10px 12px;
+  font-size: .62rem; font-weight: 500; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-3); font-family: var(--f-body);
+  white-space: nowrap;
+}
+.bank-table th:first-child { padding-left: 0; }
+.bank-table th:last-child { text-align: right; }
+.bank-table tbody tr {
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer; transition: background .1s;
+}
+.bank-table tbody tr:last-child { border-bottom: none; }
+.bank-table tbody tr:hover { background: rgba(11,24,37,.025); }
+.bank-table td {
+  padding: 11px 12px; font-size: .78rem; color: var(--text-2);
+  vertical-align: middle;
+}
+.bank-table td:first-child { padding-left: 0; }
+.bank-table td:last-child { text-align: right; }
+
+.td-bank { display: flex; align-items: center; gap: 10px; }
+.bank-abbr {
+  width: 32px; height: 32px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-mono); font-size: .58rem; font-weight: 500;
+  color: #fff; flex-shrink: 0;
+}
+.bank-name-row .name { font-size: .78rem; font-weight: 500; color: var(--text); }
+.bank-name-row .sub { font-size: .66rem; color: var(--text-3); margin-top: 1px; }
+
+.status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.ok { background: var(--green); }
+.status-dot.warn { background: var(--amber); }
+.status-dot.err { background: var(--red); }
+.status-label { font-size: .73rem; }
+.status-label.ok { color: var(--green); }
+.status-label.warn { color: var(--amber); }
+.status-label.err { color: var(--red); }
+.td-status { display: flex; align-items: center; gap: 6px; }
+
+.score-ring { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
+.score-ring svg { width: 30px; height: 30px; transform: rotate(-90deg); }
+.sr-bg { fill: none; stroke: var(--line); stroke-width: 3; }
+.sr-fg { fill: none; stroke-width: 3; stroke-linecap: round; }
+.sr-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--f-mono); font-size: .52rem; font-weight: 500; color: var(--text); }
+
+.wait-val { font-family: var(--f-mono); font-size: .73rem; color: var(--text-2); }
+.update-val { font-size: .69rem; color: var(--text-3); white-space: nowrap; }
+.update-val strong { color: var(--text-2); font-weight: 500; }
+
+.fav-btn { width: 22px; height: 22px; border: none; background: none; display: flex; align-items: center; justify-content: center; transition: .15s; }
+.fav-btn svg { width: 12px; height: 12px; fill: none; stroke: var(--line); stroke-width: 2; stroke-linecap: round; transition: .15s; }
+.fav-btn.active svg { fill: var(--gold); stroke: var(--gold); }
+
+.best-row { background: rgba(184,151,74,.04) !important; }
+.best-row td:first-child { border-left: 2px solid var(--gold); padding-left: 10px; }
+.best-label { font-size: .6rem; font-weight: 500; color: var(--gold); margin-top: 1px; display: flex; align-items: center; gap: 3px; }
+
+/* ─────────────────────────────────────────────────────────────────
+   DETAIL PANEL
+───────────────────────────────────────────────────────────────── */
+.overlay { position: fixed; inset: 0; z-index: 800; opacity: 0; pointer-events: none; transition: opacity .2s; display: flex; align-items: stretch; justify-content: flex-end; }
+.overlay.open { opacity: 1; pointer-events: all; }
+.overlay-bd { position: absolute; inset: 0; background: rgba(11,24,37,.4); backdrop-filter: blur(3px); }
+.detail {
+  position: relative; z-index: 1; width: 560px;
+  background: var(--white); display: flex; flex-direction: column;
+  transform: translateX(24px); transition: transform .22s;
+  overflow: hidden;
+}
+.overlay.open .detail { transform: none; }
+
+.det-head {
+  background: var(--navy); padding: 20px 22px 16px;
+  display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0;
+}
+.det-abbr { font-family: var(--f-mono); font-size: .62rem; color: var(--gold); letter-spacing: 1.2px; margin-bottom: 3px; }
+.det-name { font-family: var(--f-head); font-size: 1.15rem; font-weight: 600; color: #fff; margin-bottom: 2px; }
+.det-sub { font-size: .68rem; color: rgba(255,255,255,.35); }
+.det-close { width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: .15s; }
+.det-close:hover { background: rgba(255,255,255,.12); }
+.det-close svg { width: 11px; height: 11px; stroke: rgba(255,255,255,.6); fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+.det-body { flex: 1; overflow-y: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+
+/* loc step - compact */
+.loc-compact { display:flex; align-items:flex-start; gap:14px; padding:16px; background:var(--surface); border:1px solid var(--line); border-radius:8px; margin-bottom:14px; }
+.loc-compact-icon { width:40px; height:40px; border-radius:9px; background:var(--white); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--navy-50); flex-shrink:0; }
+.loc-compact-title { font-family:var(--f-head); font-size:.82rem; font-weight:600; color:var(--text); margin-bottom:4px; }
+.loc-compact-sub { font-size:.69rem; color:var(--text-3); line-height:1.55; }
+.find-btn-sec {
+  width:100%; height:32px; margin-top:6px;
+  background:transparent; color:var(--text-3); border:1px solid var(--line); border-radius:7px;
+  font-size:.74rem; font-weight:400; display:flex; align-items:center; justify-content:center;
+  transition:.15s; cursor:pointer; font-family:var(--f-body);
+}
+.find-btn-sec:hover { color:var(--text-2); border-color:var(--navy-30); }
+
+/* ─── LOCATION LOADING STATE ─────────────────────────────────────── */
+#loc-loading { display:none; flex-direction:column; gap:0; }
+#loc-loading.active { display:flex; }
+
+.ll-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:20px;
+}
+.ll-header-left { display:flex; flex-direction:column; gap:2px; }
+.ll-title { font-family:var(--f-head); font-size:.85rem; font-weight:600; color:var(--text); }
+.ll-subtitle { font-size:.65rem; color:var(--text-3); }
+
+.ll-spinner-wrap {
+  display:flex; flex-direction:column; align-items:center; gap:16px;
+  padding:24px 0 20px;
+}
+.ll-ring {
+  position:relative; width:52px; height:52px;
+}
+.ll-ring svg { width:52px; height:52px; animation: ll-rotate 1.4s linear infinite; }
+@keyframes ll-rotate { to { transform:rotate(360deg); } }
+.ll-ring-bg { fill:none; stroke:var(--line); stroke-width:3; }
+.ll-ring-arc { fill:none; stroke:var(--gold); stroke-width:3; stroke-linecap:round;
+  stroke-dasharray:30 100; animation: ll-dash 1.4s ease-in-out infinite; }
+@keyframes ll-dash {
+  0%   { stroke-dasharray: 4 100; stroke-dashoffset:0; }
+  50%  { stroke-dasharray: 58 100; }
+  100% { stroke-dasharray: 4 100; stroke-dashoffset:-100; }
+}
+.ll-pulse-dot {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+}
+.ll-pulse-dot::after {
+  content:''; width:8px; height:8px; border-radius:50%;
+  background:var(--gold); opacity:.6;
+  animation: ll-pulse 1.4s ease-in-out infinite;
+}
+@keyframes ll-pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:.8;transform:scale(1.1)} }
+
+.ll-status-text {
+  font-size:.78rem; color:var(--text-2); font-weight:400;
+  text-align:center; min-height:1.2em;
+  transition: opacity .35s ease;
+}
+.ll-status-text.fading { opacity:0; }
+
+.ll-progress-wrap {
+  width:100%; height:2px; background:var(--line); border-radius:1px;
+  overflow:hidden; margin-bottom:20px;
+}
+.ll-progress-bar {
+  height:100%; background:var(--gold); border-radius:1px;
+  width:0%; transition:width .6s cubic-bezier(.4,0,.2,1);
+}
+
+.ll-meta-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:4px;
+}
+.ll-meta-item {
+  padding:9px 11px; background:var(--surface);
+  border:1px solid var(--line); border-radius:6px;
+  display:flex; flex-direction:column; gap:2px;
+}
+.ll-meta-lbl { font-size:.56rem; text-transform:uppercase; letter-spacing:.8px; color:var(--text-3); }
+.ll-meta-val {
+  font-family:var(--f-mono); font-size:.7rem; color:var(--text-2);
+  opacity:0; transform:translateY(4px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.ll-meta-val.visible { opacity:1; transform:none; }
+
+.ll-footer-note {
+  font-size:.6rem; color:var(--text-3); text-align:center;
+  padding-top:12px; border-top:1px solid var(--line-soft);
+  margin-top:4px;
+}
+
+/* results fade-in */
+.det-results { display:none; flex-direction:column; gap:14px; }
+
+/* recentrar map button */
+.map-recenter {
+  position:absolute; bottom:12px; right:12px; z-index:400;
+  width:32px; height:32px; border-radius:50%;
+  background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
+  border:1px solid rgba(0,0,0,.08);
+  box-shadow:0 1px 6px rgba(0,0,0,.12);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:.15s;
+  color:var(--navy-50);
+}
+.map-recenter:hover { background:#fff; color:var(--navy); }
+.map-recenter svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* topbar system chip */
+.topbar-system { display:flex; align-items:center; gap:5px; font-size:.62rem; color:var(--text-3); white-space:nowrap; }
+.sys-dot { width:5px; height:5px; border-radius:50%; background:var(--green); flex-shrink:0; animation:blink 2.4s infinite; }
+.topbar-date { font-family:var(--f-mono); font-size:.62rem; color:var(--text-3); border-left:1px solid var(--line); padding-left:10px; margin-left:4px; white-space:nowrap; }
+
+/* find-btn */
+.find-btn {
+  width: 100%; height: 36px;
+  background: var(--navy); color: rgba(255,255,255,.85); border: none; border-radius: 7px;
+  font-size: .78rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: background .15s; font-family:var(--f-body);
+}
+.find-btn:hover { background: var(--navy-70); }
+.find-btn svg { width: 13px; height: 13px; stroke: var(--gold); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* results */
+#dp-map { height: 160px; border-radius: 8px; border: 1px solid var(--line); }
+
+/* branch slides */
+.slides-wrap { overflow: hidden; }
+.slides { display: flex; transition: transform .28s ease; }
+.slide { min-width: 100%; }
+.branch-card {
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px; background: var(--surface);
+  position: relative;
+}
+.branch-card.best-card { border-color: rgba(184,151,74,.35); background: rgba(184,151,74,.03); }
+.best-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .6rem; font-weight: 500; color: var(--gold);
+  background: rgba(184,151,74,.1);
+  border: 1px solid rgba(184,151,74,.25);
+  padding: 2px 8px; border-radius: 4px; margin-bottom: 8px;
+}
+.bc-row1 { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.bc-name { font-family: var(--f-head); font-size: .85rem; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.bc-addr { font-size: .66rem; color: var(--text-3); }
+.bc-dist { font-family: var(--f-mono); font-size: .68rem; color: var(--text-3); white-space: nowrap; }
+.bc-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.bc-metric { padding: 8px 10px; background: var(--white); border: 1px solid var(--line); border-radius: 6px; }
+.bcm-val { font-family: var(--f-head); font-size: .85rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+.bcm-lbl { font-size: .6rem; color: var(--text-3); margin-top: 2px; }
+.bc-svcs { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.bc-svc-row { display: flex; align-items: center; justify-content: space-between; font-size: .72rem; color: var(--text-2); }
+.svc-status { font-size: .67rem; font-weight: 500; }
+.svc-status.ok { color: var(--green); }
+.svc-status.warn { color: var(--amber); }
+.svc-status.err { color: var(--red); }
+.bc-top-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.bc-flow { font-size:.6rem; font-weight:500; padding:2px 8px; border-radius:4px; }
+.flow-normal { background:rgba(30,138,94,.08); color:var(--green); }
+.flow-high { background:rgba(154,107,10,.08); color:var(--amber); }
+.bc-detail-row { display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; margin-bottom:10px; padding:10px 12px; background:var(--white); border:1px solid var(--line); border-radius:6px; }
+.bc-detail-item { display:flex; flex-direction:column; gap:2px; }
+.bc-detail-lbl { font-size:.58rem; color:var(--text-3); text-transform:uppercase; letter-spacing:.6px; }
+.bc-detail-val { font-size:.73rem; font-weight:500; color:var(--text); }
+.card-ok { color:var(--green)!important; }
+.card-warn { color:var(--amber)!important; }
+.card-err { color:var(--red)!important; }
+.bc-footer-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-top:8px; padding-top:8px; border-top:1px solid var(--line); }
+.bc-upd-time { font-size:.6rem; color:var(--text-3); font-family:var(--f-mono); }
+.bc-tags-inline { display:flex; gap:4px; flex-wrap:wrap; }
+.bc-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.bc-tag { font-size: .62rem; padding: 2px 8px; border-radius: 3px; background: var(--white); border: 1px solid var(--line); color: var(--text-3); }
+.slide-ctrl { display: flex; align-items: center; justify-content: space-between; }
+.s-dots { display: flex; gap: 4px; align-items: center; }
+.s-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--line); cursor: pointer; transition: .15s; }
+.s-dot.active { background: var(--navy); width: 14px; border-radius: 3px; }
+.s-arrows { display: flex; gap: 5px; }
+.s-arr { width: 26px; height: 26px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; transition: .15s; }
+.s-arr:hover:not(:disabled) { border-color: var(--navy-30); }
+.s-arr:disabled { opacity: .3; cursor: not-allowed; }
+.s-arr svg { width: 9px; height: 9px; stroke: var(--text-2); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ─────────────────────────────────────────────────────────────────
+   CONTRIBUTE MODAL
+───────────────────────────────────────────────────────────────── */
+.modal-wrap { position: fixed; inset: 0; z-index: 900; opacity: 0; pointer-events: none; transition: opacity .2s; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal-wrap.open { opacity: 1; pointer-events: all; }
+.modal-bd { position: absolute; inset: 0; background: rgba(11,24,37,.45); backdrop-filter: blur(4px); }
+.modal {
+  background: var(--white); border-radius: 10px;
+  width: 100%; max-width: 420px;
+  position: relative; z-index: 1;
+  box-shadow: 0 16px 48px rgba(0,0,0,.14);
+  transform: translateY(12px); transition: transform .22s;
+  overflow: hidden; max-height: 90vh; overflow-y: auto;
+}
+.modal-wrap.open .modal { transform: none; }
+.modal-head {
+  padding: 16px 18px 14px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.modal-ttl { font-family: var(--f-head); font-size: .9rem; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.modal-sub { font-size: .68rem; color: var(--text-3); }
+.modal-x { width: 24px; height: 24px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: .15s; }
+.modal-x:hover { background: var(--line); }
+.modal-x svg { width: 10px; height: 10px; stroke: var(--text-3); fill: none; stroke-width: 2.5; stroke-linecap: round; }
+.modal-body { padding: 16px 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.field-label { font-size: .62rem; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; display: block; }
+.field-input {
+  width: 100%; padding: 8px 11px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 7px;
+  font-family: var(--f-body); font-size: .8rem; color: var(--text);
+  outline: none; transition: .15s;
+}
+.field-input:focus { border-color: var(--navy-30); background: var(--white); box-shadow: 0 0 0 3px rgba(15,32,48,.06); }
+.field-input::placeholder { color: rgba(122,150,168,.4); }
+#ctr-mini-map { height: 130px; border-radius: 7px; border: 1px solid var(--line); }
+
+.svc-grid { display: flex; flex-direction: column; gap: 5px; }
+.svc-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 11px; border: 1px solid var(--line); border-radius: 7px;
+  background: var(--surface); cursor: pointer; transition: .15s;
+}
+.svc-row:hover { border-color: var(--navy-30); }
+.svc-row.s-ok   { border-color: rgba(30,138,94,.3);  background: rgba(30,138,94,.04); }
+.svc-row.s-warn { border-color: rgba(154,107,10,.3); background: rgba(154,107,10,.04); }
+.svc-row.s-err  { border-color: rgba(176,51,51,.3);  background: rgba(176,51,51,.04); }
+.sr-left { display: flex; align-items: center; gap: 8px; }
+.sr-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.svc-row.s-ok .sr-dot { background: var(--green); }
+.svc-row.s-warn .sr-dot { background: var(--amber); }
+.svc-row.s-err .sr-dot { background: var(--red); }
+.sr-name { font-size: .75rem; color: var(--text); }
+.sr-val { font-size: .68rem; font-weight: 500; }
+.svc-row.s-ok .sr-val { color: var(--green); }
+.svc-row.s-warn .sr-val { color: var(--amber); }
+.svc-row.s-err .sr-val { color: var(--red); }
+
+.prev-section-label { font-size: .62rem; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+.prev-list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.prev-row { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-bottom: 1px solid var(--line-soft); }
+.prev-row:last-child { border-bottom: none; }
+.prev-av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .58rem; font-weight: 600; color: #fff; flex-shrink: 0; }
+.prev-name { font-size: .72rem; font-weight: 500; color: var(--text); }
+.prev-detail { font-size: .64rem; color: var(--text-3); }
+.prev-time { margin-left: auto; font-family: var(--f-mono); font-size: .58rem; color: var(--text-3); white-space: nowrap; }
+
+.public-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; cursor: pointer;
+}
+.pr-label { font-size: .76rem; font-weight: 500; color: var(--text); }
+.pr-sub { font-size: .64rem; color: var(--text-3); margin-top: 1px; }
+.toggle { width: 30px; height: 16px; border-radius: 8px; background: var(--line); position: relative; transition: background .18s; flex-shrink: 0; }
+.toggle.on { background: var(--navy); }
+.toggle::after { content: ''; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left .18s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.toggle.on::after { left: 16px; }
+
+.submit-btn {
+  width: 100%; height: 36px;
+  background: var(--navy); color: rgba(255,255,255,.85); border: none; border-radius: 7px;
+  font-size: .8rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .15s;
+}
+.submit-btn:hover { background: var(--navy-70); }
+.submit-btn svg { width: 12px; height: 12px; stroke: var(--gold); fill: none; stroke-width: 2; stroke-linecap: round; }
+
+.confirm-pane { display: none; text-align: center; padding: 16px 0 6px; }
+.confirm-pane.active { display: block; }
+.confirm-icon { width: 42px; height: 42px; border-radius: 50%; background: var(--green-bg); border: 1px solid rgba(30,138,94,.25); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+.confirm-icon svg { width: 18px; height: 18px; stroke: var(--green); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.confirm-ttl { font-family: var(--f-head); font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.confirm-sub { font-size: .72rem; color: var(--text-3); margin-bottom: 14px; }
+
+/* ─────────────────────────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 22px; right: 22px; z-index: 1100;
+  background: var(--navy); color: rgba(255,255,255,.8);
+  padding: 9px 16px; border-radius: 7px;
+  font-size: .74rem; font-weight: 400;
+  border-left: 2px solid var(--gold);
+  display: flex; align-items: center; gap: 8px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s, transform .22s;
+  transform: translateY(6px);
+  box-shadow: 0 4px 18px rgba(0,0,0,.18);
+  max-width: 300px;
+}
+.toast.show { opacity: 1; transform: none; }
+.toast svg { width: 11px; height: 11px; stroke: var(--gold); fill: none; stroke-width: 2.5; stroke-linecap: round; flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────────────────────────
+   MISC / ANIM
+───────────────────────────────────────────────────────────────── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.bank-table tbody tr { animation: fadeUp .3s ease both; }
+
+/* PREMIUM PANEL */
+.premium-overlay { position:fixed; inset:0; z-index:695; display:none; }
+.premium-overlay.open { display:block; }
+.premium-panel {
+  position:fixed; bottom:72px; left:66px; z-index:750;
+  width:240px;
+  background:var(--navy);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;
+  padding:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.28);
+  opacity:0; pointer-events:none;
+  transform:translateY(8px);
+  transition:opacity .18s, transform .18s;
+}
+.premium-panel.open { opacity:1; pointer-events:all; transform:none; }
+.prem-close-row { display:flex; justify-content:flex-end; margin-bottom:8px; }
+.prem-current { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.prem-plan-label { font-size:.6rem; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.28); }
+.prem-plan-name { font-size:.7rem; font-weight:500; color:rgba(255,255,255,.55); background:rgba(255,255,255,.07); padding:2px 8px; border-radius:4px; }
+.prem-divider { height:1px; background:rgba(255,255,255,.06); margin-bottom:12px; }
+.prem-features { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+.prem-feat-label { font-size:.6rem; text-transform:uppercase; letter-spacing:.8px; color:rgba(255,255,255,.28); margin-bottom:4px; }
+.prem-feat-item { display:flex; align-items:flex-start; gap:10px; }
+.prem-feat-icon { width:22px; height:22px; border-radius:5px; background:rgba(184,151,74,.1); border:1px solid rgba(184,151,74,.18); display:flex; align-items:center; justify-content:center; color:var(--gold); flex-shrink:0; }
+.prem-feat-title { font-size:.72rem; font-weight:500; color:rgba(255,255,255,.75); line-height:1.3; }
+.prem-feat-sub { font-size:.62rem; color:rgba(255,255,255,.32); margin-top:1px; line-height:1.4; }
+.prem-activate-btn {
+  width:100%; height:32px;
+  background:rgba(184,151,74,.12);
+  border:1px solid rgba(184,151,74,.3);
+  border-radius:7px;
+  font-size:.75rem; font-weight:500; color:var(--gold);
+  font-family:var(--f-body);
+  transition:.15s; cursor:pointer;
+}
+.prem-activate-btn:hover { background:rgba(184,151,74,.2); }
+
+@media (max-width: 1050px) { .main { grid-template-columns: 1fr; } .side-panel { position: static; max-height: none; } }
+@media (max-width: 680px) { .shell { margin-left: 0; } .map-area, .bottom { padding-left: 16px; padding-right: 16px; } .topbar, .service-row { padding: 0 16px; } .main { padding: 0; } }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo"><span>K</span></div>
+  <nav class="sb-nav">
+    <button class="sb-btn active" onclick="sbAct(this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+      <span class="sb-tooltip">Dashboard</span>
+    </button>
+    <button class="sb-btn" onclick="sbAct(this)">
+      <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span class="sb-tooltip">Mapa ao Vivo</span>
+    </button>
+    <button class="sb-btn" onclick="sbAct(this)">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="sb-tooltip">Histórico</span>
+    </button>
+    <button class="sb-btn" onclick="sbAct(this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="sb-tooltip">Horários</span>
+    </button>
+    <button class="sb-btn" onclick="sbAct(this)">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="sb-tooltip">Estatísticas</span>
+    </button>
+    <div class="sb-spacer"></div>
+    <button class="sb-btn" onclick="openPremium()" title="Premium">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      <span class="sb-tooltip">Plano Premium</span>
+    </button>
+    <button class="sb-btn" onclick="openProfile()" style="margin-top:4px">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="sb-tooltip">Perfil</span>
+    </button>
+  </nav>
+</aside>
+
+<!-- PROFILE HOVER -->
+<div class="profile-edge" onmouseenter="openProfile()"></div>
+<div class="profile-panel" id="pp" onmouseleave="closeProfile()">
+  <div class="pp-av">ML</div>
+  <div class="pp-name">Micael Luvumbo</div>
+  <div class="pp-level">Colaborador Activo</div>
+  <div class="pp-divider"></div>
+
+  <div class="pp-info-grid">
+    <div class="pp-info-item">
+      <span class="pp-info-lbl">Email</span>
+      <span class="pp-info-val"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="701c0506051d12051d191311151c30171d11191c5e131f1d">[email&#160;protected]</a></span>
+    </div>
+    <div class="pp-info-item">
+      <span class="pp-info-lbl">Contacto</span>
+      <span class="pp-info-val">+244 972 577 030</span>
+    </div>
+    <div class="pp-info-item">
+      <span class="pp-info-lbl">Membro desde</span>
+      <span class="pp-info-val">Março 2024</span>
+    </div>
+    <div class="pp-info-item">
+      <span class="pp-info-lbl">Estado da conta</span>
+      <span class="pp-info-val pp-verified">✓ Verificada</span>
+    </div>
+  </div>
+
+  <div class="pp-divider"></div>
+
+  <div class="pp-contrib-block">
+    <div class="pp-contrib-row">
+      <span class="pp-info-lbl">Total de contribuições</span>
+      <span class="pp-contrib-count">27</span>
+    </div>
+    <div class="pp-contrib-row">
+      <span class="pp-info-lbl">Última contribuição</span>
+      <span class="pp-contrib-when">Hoje às 13:20</span>
+    </div>
+  </div>
+
+  <div class="pp-divider"></div>
+
+  <button class="pp-item" onclick="toast('Editar perfil disponível em breve')">
+    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Editar perfil
+  </button>
+  <button class="pp-item" onclick="toast('Definições em desenvolvimento')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Definições
+  </button>
+  <button class="pp-logout" onclick="toast('Sessão encerrada (demo)')">
+    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Terminar sessão
+  </button>
+</div>
+
+<!-- PREMIUM PANEL -->
+<div class="premium-overlay" id="premium-overlay" onclick="closePremium()"></div>
+<div class="premium-panel" id="premium-panel">
+  <div class="prem-close-row">
+    <button class="det-close" onclick="closePremium()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="prem-current">
+    <span class="prem-plan-label">Plano actual</span>
+    <span class="prem-plan-name">Gratuito</span>
+  </div>
+  <div class="prem-divider"></div>
+  <div class="prem-features">
+    <div class="prem-feat-label">Com o plano Premium terás acesso a:</div>
+    <div class="prem-feat-item">
+      <div class="prem-feat-icon">
+        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div>
+        <div class="prem-feat-title">Previsões de pico</div>
+        <div class="prem-feat-sub">Antecipe horários de maior afluência</div>
+      </div>
+    </div>
+    <div class="prem-feat-item">
+      <div class="prem-feat-icon">
+        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div>
+        <div class="prem-feat-title">Histórico completo 30 dias</div>
+        <div class="prem-feat-sub">Análise histórica de filas e esperas</div>
+      </div>
+    </div>
+    <div class="prem-feat-item">
+      <div class="prem-feat-icon">
+        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+      <div>
+        <div class="prem-feat-title">Alertas personalizados</div>
+        <div class="prem-feat-sub">Notificações quando a fila baixar</div>
+      </div>
+    </div>
+    <div class="prem-feat-item">
+      <div class="prem-feat-icon">
+        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <div>
+        <div class="prem-feat-title">Prioridade nas contribuições</div>
+        <div class="prem-feat-sub">As suas actualizações aparecem primeiro</div>
+      </div>
+    </div>
+  </div>
+  <button class="prem-activate-btn" onclick="toast('Plano Premium disponível em breve.'); closePremium();">Activar Premium</button>
+</div>
+
+<!-- APP SHELL -->
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="search-input" placeholder="Pesquisar banco ou ATM" oninput="onSearch(this.value)">
+    </div>
+    <div class="topbar-system">
+      <div class="sys-dot"></div>
+      Sistema operacional
+    </div>
+    <div class="topbar-date" id="topbar-date">—</div>
+    <div class="topbar-right">
+      <button class="contrib-btn" onclick="openContrib()">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Contribuir
+      </button>
+      <div class="tb-av" onclick="openProfile()" style="cursor:pointer" title="Perfil">ML</div>
+    </div>
+  </header>
+
+  <!-- SERVICE ROW -->
+  <div class="service-row">
+    <span class="svc-label">Serviço</span>
+    <button class="svc-pill active" onclick="svcSel(this,'all')">Todos</button>
+    <button class="svc-pill" onclick="svcSel(this,'atm')">Levantamento</button>
+    <button class="svc-pill" onclick="svcSel(this,'open')">Abertura de Conta</button>
+    <button class="svc-pill" onclick="svcSel(this,'card')">Cartão</button>
+    <button class="svc-pill" onclick="svcSel(this,'update')">Actualização de Dados</button>
+    <button class="svc-pill" onclick="svcSel(this,'transfer')">Transferência</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- MAP -->
+    <div class="map-area">
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-chip">
+          <div class="live-dot"></div>
+          <span id="visible-count">23</span> agências visíveis · Luanda
+        </div>
+        <button class="map-recenter" onclick="recentrarMapa()" title="Recentrar">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+        </button>
+      </div>
+      <div class="map-status-bar">
+        <div class="ms-label">
+          Última actualização: <strong id="ticker">há 3 min · BIC Luanda Sul · por C. Afonso</strong>
+        </div>
+        <button class="ms-nearby" onclick="doNearby()">
+          <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Perto de mim
+        </button>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="side-panel">
+
+      <!-- Network Index -->
+      <div class="index-card">
+        <div class="ic-header">
+          <div>
+            <div class="ic-meta">Índice KiBank</div>
+            <div class="ic-title">Rede Nacional</div>
+          </div>
+          <div class="ic-ring">
+            <svg viewBox="0 0 58 58">
+              <circle class="ic-rb" cx="29" cy="29" r="24"/>
+              <circle class="ic-rf" cx="29" cy="29" r="24" id="ki-ring" stroke-dasharray="0 151"/>
+            </svg>
+            <div class="ic-center">
+              <div class="ic-num" id="ki-num">0</div>
+              <div class="ic-den">/100</div>
+            </div>
+          </div>
+        </div>
+        <div class="ic-bars">
+          <div class="ic-bar-row">
+            <span class="ic-bar-name">Disponibilidade</span>
+            <div class="ic-bar-wrap"><div class="ic-bar-fill" id="kf1" style="background:#1E8A5E;width:0%"></div></div>
+            <span class="ic-bar-val" id="kfp1">0%</span>
+          </div>
+          <div class="ic-bar-row">
+            <span class="ic-bar-name">Tempo médio</span>
+            <div class="ic-bar-wrap"><div class="ic-bar-fill" id="kf2" style="background:#B8974A;width:0%"></div></div>
+            <span class="ic-bar-val" id="kfp2">0%</span>
+          </div>
+          <div class="ic-bar-row">
+            <span class="ic-bar-name">Estabilidade</span>
+            <div class="ic-bar-wrap"><div class="ic-bar-fill" id="kf3" style="background:#3A7FC1;width:0%"></div></div>
+            <span class="ic-bar-val" id="kfp3">0%</span>
+          </div>
+          <div class="ic-bar-row">
+            <span class="ic-bar-name">Confirmações</span>
+            <div class="ic-bar-wrap"><div class="ic-bar-fill" id="kf4" style="background:#6B9EC4;width:0%"></div></div>
+            <span class="ic-bar-val" id="kfp4">0%</span>
+          </div>
+        </div>
+        <div class="ic-footer">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+          Tendência 2h: <span class="ic-trend">+3 pontos</span>
+        </div>
+      </div>
+
+      <!-- Hour chart -->
+      <div class="hour-card">
+        <div class="hc-head">
+          <div class="hc-title">Fluxo de atendimento</div>
+          <span class="hc-badge">Melhor: 14h – 15h</span>
+        </div>
+        <div class="hc-chart-wrap">
+          <svg id="hour-svg" viewBox="0 0 280 64" preserveAspectRatio="none" style="height:64px">
+            <defs>
+              <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#B8974A" stop-opacity="0.12"/>
+                <stop offset="100%" stop-color="#B8974A" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- filled area - will be set by JS -->
+            <path id="hc-area" fill="url(#hg)"/>
+            <!-- line -->
+            <path id="hc-line" fill="none" stroke="#B8974A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- current time dot -->
+            <circle id="hc-dot" r="3" fill="#B8974A"/>
+            <!-- axis labels -->
+            <text x="0"   y="62" font-family="DM Mono,monospace" font-size="7" fill="#9BAFBF">08h</text>
+            <text x="38"  y="62" font-family="DM Mono,monospace" font-size="7" fill="#9BAFBF">09h</text>
+            <text x="78"  y="62" font-family="DM Mono,monospace" font-size="7" fill="#9BAFBF">11h</text>
+            <text x="156" y="62" font-family="DM Mono,monospace" font-size="7" fill="#9BAFBF">13h</text>
+            <text x="216" y="62" font-family="DM Mono,monospace" font-size="7" fill="#9BAFBF">14h</text>
+            <text x="256" y="62" font-family="DM Mono,monospace" font-size="7" fill="#B03333">15h</text>
+            <!-- closing line -->
+            <line x1="268" y1="2" x2="268" y2="54" stroke="#B03333" stroke-width="1" stroke-dasharray="2,2" opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="hc-note">
+          <span>Evite 11h – 13h · pico de atendimento</span>
+          <span class="hc-closed">Encerramento às 15:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANK TABLE -->
+  <div class="bottom">
+    <div class="bt-header">
+      <div class="bt-title">Bancos</div>
+      <span class="bt-count" id="bank-count">23 instituições</span>
+    </div>
+    <div class="bt-tabs">
+      <button class="bt-tab active" onclick="btTab(this,'tab-all')">Em Destaque</button>
+      <button class="bt-tab" onclick="btTab(this,'tab-explore')">Todos</button>
+      <button class="bt-tab" onclick="btTab(this,'tab-fav')">Favoritos</button>
+    </div>
+    <div class="tab-pane active" id="tab-all">
+      <table class="bank-table">
+        <thead><tr>
+          <th style="width:36%">Banco</th>
+          <th>Estado</th>
+          <th>Score</th>
+          <th>Espera</th>
+          <th>Actualização</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tbody-all"></tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="tab-explore">
+      <table class="bank-table">
+        <thead><tr>
+          <th style="width:36%">Banco</th>
+          <th>Estado</th>
+          <th>Score</th>
+          <th>Espera</th>
+          <th>Actualização</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tbody-explore"></tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="tab-fav">
+      <table class="bank-table">
+        <thead><tr>
+          <th style="width:36%">Banco</th>
+          <th>Estado</th>
+          <th>Score</th>
+          <th>Espera</th>
+          <th>Actualização</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tbody-fav"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="overlay" id="overlay">
+  <div class="overlay-bd" onclick="closeDetail()"></div>
+  <div class="detail">
+    <div class="det-head">
+      <div>
+        <div class="det-abbr" id="d-abbr">—</div>
+        <div class="det-name" id="d-name">—</div>
+        <div class="det-sub">Olá, Micael. Seleccione como prefere encontrar agências.</div>
+      </div>
+      <button class="det-close" onclick="closeDetail()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="det-body">
+      <!-- Step 1: location -->
+      <div id="loc-step">
+        <div class="loc-compact">
+          <div class="loc-compact-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div class="loc-compact-text">
+            <div class="loc-compact-title">Localizar agências próximas</div>
+            <div class="loc-compact-sub">Precisamos da sua localização para mostrar as agências mais próximas e os tempos reais de espera.</div>
+          </div>
+        </div>
+        <button class="find-btn" onclick="startLocationSearch()">
+          <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Activar localização
+        </button>
+        <button class="find-btn-sec" onclick="startLocationSearch()">Inserir manualmente · Viana</button>
+      </div>
+
+      <!-- Step 1b: loading state -->
+      <div id="loc-loading">
+        <div class="ll-header">
+          <div class="ll-header-left">
+            <div class="ll-title">A processar localização</div>
+            <div class="ll-subtitle">Serviço de geolocalização KiBank</div>
+          </div>
+        </div>
+
+        <div class="ll-progress-wrap">
+          <div class="ll-progress-bar" id="ll-bar"></div>
+        </div>
+
+        <div class="ll-spinner-wrap">
+          <div class="ll-ring">
+            <svg viewBox="0 0 52 52">
+              <circle class="ll-ring-bg" cx="26" cy="26" r="22"/>
+              <circle class="ll-ring-arc" cx="26" cy="26" r="22"/>
+            </svg>
+            <div class="ll-pulse-dot"></div>
+          </div>
+          <div class="ll-status-text" id="ll-status">A obter coordenadas…</div>
+        </div>
+
+        <div class="ll-meta-grid">
+          <div class="ll-meta-item">
+            <span class="ll-meta-lbl">Coordenadas</span>
+            <span class="ll-meta-val" id="ll-coords">—</span>
+          </div>
+          <div class="ll-meta-item">
+            <span class="ll-meta-lbl">Precisão</span>
+            <span class="ll-meta-val" id="ll-accuracy">—</span>
+          </div>
+          <div class="ll-meta-item">
+            <span class="ll-meta-lbl">Localização</span>
+            <span class="ll-meta-val" id="ll-location">—</span>
+          </div>
+          <div class="ll-meta-item">
+            <span class="ll-meta-lbl">Agências encontradas</span>
+            <span class="ll-meta-val" id="ll-count">—</span>
+          </div>
+        </div>
+
+        <div class="ll-footer-note">Dados actualizados em tempo real · KiBank Network v2.4</div>
+      </div>
+
+      <!-- Step 2: results -->
+      <div class="det-results" id="det-results">
+        <div style="font-size:.69rem;color:var(--text-3)" id="found-lbl">3 agências encontradas</div>
+        <div id="dp-map"></div>
+        <div class="slides-wrap">
+          <div class="slides" id="dp-slides"></div>
+        </div>
+        <div class="slide-ctrl">
+          <div class="s-dots" id="dp-dots"></div>
+          <div class="s-arrows">
+            <button class="s-arr" id="dp-prev" onclick="dpMv(-1)" disabled>
+              <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="s-arr" id="dp-next" onclick="dpMv(1)">
+              <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-wrap" id="modal-wrap" onclick="modalClick(event)">
+  <div class="modal-bd"></div>
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-ttl">Contribuir com dados</div>
+        <div class="modal-sub">Partilhe o estado actual do banco</div>
+      </div>
+      <button class="modal-x" onclick="closeContrib()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="ctr-form">
+        <div>
+          <label class="field-label">Banco</label>
+          <input type="text" class="field-input" id="ctr-bank" placeholder="Ex: BIC Luanda Sul" oninput="ctrInput(this.value)">
+        </div>
+        <div id="ctr-map-wrap" style="display:none">
+          <div id="ctr-mini-map"></div>
+        </div>
+        <div id="prev-section" style="display:none">
+          <div class="prev-section-label">Actualizações recentes aqui</div>
+          <div class="prev-list" id="prev-list"></div>
+        </div>
+        <div>
+          <label class="field-label">Estado dos serviços</label>
+          <div class="svc-grid" id="svc-grid"></div>
+        </div>
+        <div class="public-row" onclick="togglePublic()">
+          <div>
+            <div class="pr-label">Partilhar publicamente</div>
+            <div class="pr-sub">Outros utilizadores verão esta actualização</div>
+          </div>
+          <div class="toggle on" id="pub-toggle"></div>
+        </div>
+        <button class="submit-btn" onclick="submitContrib()">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Submeter
+        </button>
+      </div>
+      <div class="confirm-pane" id="ctr-confirm">
+        <div class="confirm-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="confirm-ttl">Actualização registada</div>
+        <div class="confirm-sub" id="confirm-txt">Dados guardados com sucesso.</div>
+        <button class="submit-btn" onclick="closeContrib()">Concluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-txt"></span>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   KIBANK v6 — DATA
+══════════════════════════════════════════════════════════════════════ */
+const BANKS = [
+  {id:'bfa',  abbr:'BFA',  name:'Banco de Fomento Angola',          color:'#1A237E', score:91, status:'ok',  wait:'9 min',  upd:'há 7 min',  updBy:'J. Teixeira',  trending:true,  fav:true,  best:false},
+  {id:'sca',  abbr:'SCA',  name:'Standard Chartered Angola',        color:'#00695C', score:88, status:'ok',  wait:'12 min', upd:'há 14 min', updBy:'R. Domingos',  trending:true,  fav:false, best:false},
+  {id:'bai',  abbr:'BAI',  name:'Banco Angolano de Investimentos',  color:'#1A6B5A', score:87, status:'ok',  wait:'14 min', upd:'há 3 min',  updBy:'C. Afonso',    trending:true,  fav:false, best:false},
+  {id:'bic',  abbr:'BIC',  name:'Banco BIC',                        color:'#154360', score:85, status:'ok',  wait:'11 min', upd:'há 3 min',  updBy:'C. Afonso',    trending:true,  fav:true,  best:false},
+  {id:'sba',  abbr:'SBA',  name:'Standard Bank de Angola',          color:'#004D40', score:84, status:'ok',  wait:'18 min', upd:'há 22 min', updBy:'M. Ferreira',  trending:true,  fav:false, best:false},
+  {id:'mill', abbr:'Mill', name:'Banco Millennium Atlântico',       color:'#1B2631', score:83, status:'ok',  wait:'21 min', upd:'há 31 min', updBy:'A. Santos',    trending:true,  fav:false, best:false},
+  {id:'bcga', abbr:'BCGA', name:'Banco Caixa Geral Angola',         color:'#1A5276', score:81, status:'ok',  wait:'16 min', upd:'há 45 min', updBy:'P. Monteiro',  trending:false, fav:false, best:false},
+  {id:'accb', abbr:'AccB', name:'Access Bank Angola',               color:'#1A237E', score:79, status:'ok',  wait:'23 min', upd:'há 1h',     updBy:'F. Costa',     trending:false, fav:false, best:false},
+  {id:'yetu', abbr:'Yetu', name:'Banco Yetu',                       color:'#1565C0', score:79, status:'ok',  wait:'19 min', upd:'há 52 min', updBy:'S. Paulo',     trending:false, fav:false, best:false},
+  {id:'beco', abbr:'BEco', name:'Banco Económico',                  color:'#1B4F72', score:78, status:'ok',  wait:'27 min', upd:'há 1h12',   updBy:'L. Nunes',     trending:false, fav:false, best:false},
+  {id:'sol',  abbr:'Sol',  name:'Banco Sol',                        color:'#BF360C', score:77, status:'ok',  wait:'22 min', upd:'há 2h',     updBy:'E. Carvalho',  trending:false, fav:false, best:false},
+  {id:'bni',  abbr:'BNI',  name:'Banco de Negócios Internacional',  color:'#145A32', score:76, status:'ok',  wait:'31 min', upd:'há 2h',     updBy:'T. Matos',     trending:false, fav:false, best:false},
+  {id:'bca',  abbr:'BCA',  name:'Banco Comercial Angolano',         color:'#4A235A', score:72, status:'warn',wait:'38 min', upd:'há 3h',     updBy:'J. Lima',      trending:false, fav:false, best:false},
+  {id:'bci',  abbr:'BCI',  name:'Banco de Comércio e Indústria',    color:'#4E342E', score:74, status:'warn',wait:'35 min', upd:'há 2h45',   updBy:'A. Neto',      trending:false, fav:false, best:false},
+  {id:'vtb',  abbr:'VTB',  name:'Banco VTB África',                 color:'#37474F', score:73, status:'ok',  wait:'29 min', upd:'há 3h',     updBy:'O. Dias',      trending:false, fav:false, best:false},
+  {id:'valor',abbr:'Valor',name:'Banco Valor',                      color:'#2D4739', score:71, status:'ok',  wait:'33 min', upd:'há 3h30',   updBy:'C. Graça',     trending:false, fav:false, best:false},
+  {id:'bcha', abbr:'BCha', name:'Banco da China – Luanda',          color:'#922B21', score:70, status:'ok',  wait:'26 min', upd:'há 4h',     updBy:'K. Mendes',    trending:false, fav:false, best:false},
+  {id:'keve', abbr:'Keve', name:'Banco Keve',                       color:'#4A4000', score:69, status:'ok',  wait:'41 min', upd:'há 4h',     updBy:'N. Rocha',     trending:false, fav:false, best:false},
+  {id:'bda',  abbr:'BDA',  name:'Banco de Desenvolvimento Angola',  color:'#0B3D0B', score:68, status:'ok',  wait:'44 min', upd:'há 5h',     updBy:'M. Baptista',  trending:false, fav:false, best:false},
+  {id:'bcs',  abbr:'BCS',  name:'Banco de Crédito do Sul',          color:'#5D4037', score:67, status:'warn',wait:'48 min', upd:'há 5h',     updBy:'R. Lopes',     trending:false, fav:false, best:false},
+  {id:'bir',  abbr:'BIR',  name:'Banco de Investimento Rural',      color:'#3E2723', score:62, status:'warn',wait:'52 min', upd:'há 6h',     updBy:'D. Silva',     trending:false, fav:false, best:false},
+  {id:'bchu', abbr:'BCHu', name:'Banco Comercial do Huambo',        color:'#6E2F1A', score:65, status:'warn',wait:'47 min', upd:'há 6h',     updBy:'P. Castro',    trending:false, fav:false, best:false},
+  {id:'bpc',  abbr:'BPC',  name:'Banco de Poupança e Crédito',      color:'#8B0000', score:55, status:'err', wait:'—',      upd:'há 7h',     updBy:'Sistema',      trending:false, fav:false, best:false},
+];
+
+const BIC_BRANCHES = [
+  {
+    name:'BIC Luanda Sul', addr:'Via Principal, Luanda Sul', dist:'2,8 km',
+    lat:-8.9350, lng:13.3520,
+    score:92, wait:'11 min', occupancy:'Baixa',
+    caixas:'6/6', cardStatus:'Disponível', performance:92, flowLabel:'Fluxo normal',
+    updatedAgo:'Actualizado há 3 min', updatedBy:'Carlos Afonso',
+    hours:'08:00 – 15:00', estado:'Operacional',
+    services:[{n:'Caixa',s:'ok'},{n:'Abertura de Conta',s:'ok'},{n:'Cartão',s:'ok'},{n:'Actualiz. Conta',s:'ok'},{n:'Internet Banking',s:'ok'},{n:'Multicaixa Exp.',s:'ok'}],
+    tags:['Drive-through','Estacionamento','WiFi'], best:true
+  },
+  {
+    name:'BIC Viana Sede', addr:'Casa da Juventude, Viana', dist:'1,2 km',
+    lat:-8.9035, lng:13.3745,
+    score:74, wait:'28 min', occupancy:'Elevada',
+    caixas:'3/5', cardStatus:'Disponível', performance:74, flowLabel:'Alta procura',
+    updatedAgo:'Actualizado há 25 min', updatedBy:'Manuel C.',
+    hours:'08:00 – 15:00', estado:'Operacional',
+    services:[{n:'Caixa',s:'ok'},{n:'Abertura de Conta',s:'warn'},{n:'Cartão',s:'ok'},{n:'Actualiz. Conta',s:'ok'},{n:'Internet Banking',s:'ok'},{n:'Multicaixa Exp.',s:'ok'}],
+    tags:['Fila elevada','Acessível'], best:false
+  },
+  {
+    name:'BIC Estrada de Catete', addr:'Estrada de Catete, km 8', dist:'4,1 km',
+    lat:-8.8980, lng:13.3580,
+    score:81, wait:'19 min', occupancy:'Moderada',
+    caixas:'4/6', cardStatus:'Limitada', performance:81, flowLabel:'Fluxo normal',
+    updatedAgo:'Actualizado há 18 min', updatedBy:'Ana F.',
+    hours:'08:00 – 15:00', estado:'Operacional',
+    services:[{n:'Caixa',s:'ok'},{n:'Abertura de Conta',s:'ok'},{n:'Cartão',s:'warn'},{n:'Actualiz. Conta',s:'ok'},{n:'Internet Banking',s:'warn'},{n:'Multicaixa Exp.',s:'ok'}],
+    tags:['Estacionamento','Fila moderada'], best:false
+  },
+];
+
+const PREV_CONTRIBS = [
+  {name:'Carlos Afonso', color:'#1A5276', detail:'Atendimento rápido · todos os serviços ok', time:'13:20'},
+  {name:'M. António',    color:'#145A32', detail:'IB operacional · fila razoável',             time:'12:38'},
+  {name:'F. Costa',      color:'#922B21', detail:'ATM ok · espera ~8 min',                     time:'11:55'},
+  {name:'A. Neto',       color:'#4A235A', detail:'Multicaixa Express lento',                   time:'10:20'},
+];
+
+const SVCS_CTR = ['Caixa / ATM','Abertura de Conta','Emissão de Cartão','Actualização de Conta'];
+
+/* ══════════════════════════════════════════════════════════════════════
+   GLOBALS
+══════════════════════════════════════════════════════════════════════ */
+let mainMap, dpMap, ctrMap;
+let dpMapInit = false, ctrMapInit = false;
+let mapMarkers = [], dpMarkers = [], _dpBranches = [];
+let currentBank = null, dpIdx = 0, public_ = true;
+let _ppTO, _sTO, _ctrTO, _ctrMkr;
+let _locTimers = [];   // all location search timeouts
+
+/* ══════════════════════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════════════════════ */
+function sc(v){ return v >= 85 ? '#1E8A5E' : v >= 70 ? '#9A6B0A' : '#B03333'; }
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-txt').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PREMIUM
+══════════════════════════════════════════════════════════════════════ */
+function openPremium(){
+  document.getElementById('premium-panel').classList.add('open');
+  document.getElementById('premium-overlay').classList.add('open');
+}
+function closePremium(){
+  document.getElementById('premium-panel').classList.remove('open');
+  document.getElementById('premium-overlay').classList.remove('open');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════════════════════════════ */
+function sbAct(el){
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PROFILE
+══════════════════════════════════════════════════════════════════════ */
+function openProfile(){ clearTimeout(_ppTO); document.getElementById('pp').classList.add('open'); }
+function closeProfile(){ _ppTO = setTimeout(() => document.getElementById('pp').classList.remove('open'), 180); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TOPBAR DATE
+══════════════════════════════════════════════════════════════════════ */
+function initTopbarDate(){
+  const now = new Date();
+  const d = now.toLocaleDateString('pt-PT', {weekday:'short', day:'2-digit', month:'short'});
+  document.getElementById('topbar-date').textContent = d.charAt(0).toUpperCase() + d.slice(1);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MAIN MAP
+══════════════════════════════════════════════════════════════════════ */
+function initMap(){
+  mainMap = L.map('map', {zoomControl:false, attributionControl:false}).setView([-8.875, 13.308], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {maxZoom:19}).addTo(mainMap);
+
+  const pins = [
+    {lat:-8.8383, lng:13.2344, name:'BPC Sede',              s:'err'},
+    {lat:-8.8600, lng:13.3000, name:'BAI Talatona',           s:'ok'},
+    {lat:-8.9035, lng:13.3745, name:'BIC Viana Sede',         s:'ok'},
+    {lat:-8.9350, lng:13.3520, name:'BIC Luanda Sul',         s:'ok'},
+    {lat:-8.8980, lng:13.3580, name:'BIC Estrada de Catete',  s:'warn'},
+    {lat:-8.8200, lng:13.2300, name:'BFA Ingombota',          s:'ok'},
+    {lat:-8.8450, lng:13.2900, name:'Standard Bank Maianga',  s:'ok'},
+    {lat:-8.8700, lng:13.2600, name:'BAI Alvalade',           s:'ok'},
+    {lat:-8.8100, lng:13.2150, name:'Millennium Miramar',     s:'ok'},
+    {lat:-8.8300, lng:13.2500, name:'BIC Kinaxixi',           s:'ok'},
+    {lat:-8.8550, lng:13.3200, name:'BFA Talatona',           s:'ok'},
+    {lat:-8.8750, lng:13.2800, name:'BAI Samba',              s:'warn'},
+    {lat:-8.8250, lng:13.2650, name:'Access Bank Ingombota',  s:'ok'},
+    {lat:-8.8650, lng:13.3400, name:'Millennium Viana',       s:'ok'},
+    {lat:-8.8900, lng:13.3100, name:'SBA Talatona',           s:'ok'},
+    {lat:-8.8350, lng:13.2100, name:'Banco Yetu Cidade',      s:'ok'},
+  ];
+
+  pins.forEach(p => {
+    const c = p.s === 'ok' ? '#1E8A5E' : p.s === 'warn' ? '#9A6B0A' : '#B03333';
+    const icon = L.divIcon({className:'', iconSize:[18,18], iconAnchor:[9,9],
+      html:`<div style="width:18px;height:18px;border-radius:50%;background:${c};border:2px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.18)"></div>`});
+    const m = L.marker([p.lat, p.lng], {icon}).addTo(mainMap)
+      .bindPopup(`<div style="font-family:'DM Sans',sans-serif;font-size:12px;padding:2px"><b>${p.name}</b><br><span style="font-size:11px;color:#7A96A8">${p.s==='ok'?'Operacional':p.s==='warn'?'Parcial':'Indisponível'}</span></div>`, {closeButton:false, offset:[0,-4]});
+    mapMarkers.push({marker:m, name:p.name});
+  });
+
+  mainMap.on('moveend', () => {
+    const b = mainMap.getBounds();
+    document.getElementById('visible-count').textContent = mapMarkers.filter(m => b.contains(m.marker.getLatLng())).length || '—';
+  });
+}
+
+function doNearby(){
+  mainMap.setView([-8.913, 13.358], 14, {animate:true});
+  toast('A mostrar agências em Viana / Luanda Sul');
+}
+function recentrarMapa(){
+  mainMap.setView([-8.875, 13.308], 12, {animate:true});
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SEARCH
+══════════════════════════════════════════════════════════════════════ */
+function onSearch(v){
+  clearTimeout(_sTO);
+  _sTO = setTimeout(() => {
+    if(v.length >= 2){
+      const m = mapMarkers.find(x => x.name.toLowerCase().includes(v.toLowerCase()));
+      if(m){ mainMap.setView(m.marker.getLatLng(), 15, {animate:true}); m.marker.openPopup(); }
+    } else { mainMap.setView([-8.875, 13.308], 12); }
+    filterTables(v);
+  }, 280);
+}
+function filterTables(q){
+  const l = q.toLowerCase();
+  document.querySelectorAll('.bank-table tbody tr').forEach(r => {
+    r.style.display = (!q || (r.dataset.name||'').toLowerCase().includes(l)) ? '' : 'none';
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SERVICE FILTER
+══════════════════════════════════════════════════════════════════════ */
+function svcSel(el, type){
+  document.querySelectorAll('.svc-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  if(type !== 'all') toast(`Filtrando por "${el.textContent.trim()}"`);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   HOUR CHART
+══════════════════════════════════════════════════════════════════════ */
+function buildHours(){
+  const W = 268, H = 52;
+  const pts = [
+    {busy:15}, {busy:35}, {busy:58}, {busy:82},
+    {busy:91}, {busy:78}, {busy:42}, {busy:10},
+  ];
+  const n = pts.length;
+  const coords = pts.map((p, i) => ({
+    x: Math.round((i / (n-1)) * W),
+    y: Math.round(H - (p.busy / 100) * H + 2)
+  }));
+  const lineD  = coords.map((c,i) => (i===0?`M${c.x},${c.y}`:`L${c.x},${c.y}`)).join(' ');
+  const areaD  = lineD + ` L${W},${H+4} L0,${H+4} Z`;
+  document.getElementById('hc-line').setAttribute('d', lineD);
+  document.getElementById('hc-area').setAttribute('d', areaD);
+  // current time dot at ~13:20 position (index ~5.3 of 8)
+  const nowIdx = 5.3;
+  const tx = Math.round((nowIdx / (n-1)) * W);
+  const ty = Math.round(H - (72/100) * H + 2);
+  document.getElementById('hc-dot').setAttribute('cx', tx);
+  document.getElementById('hc-dot').setAttribute('cy', ty);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   INDEX ANIMATION
+══════════════════════════════════════════════════════════════════════ */
+function animateIndex(){
+  const target = 81, circ = 2 * Math.PI * 24;
+  const factors = [
+    {e:'kf1', p:'kfp1', v:88},
+    {e:'kf2', p:'kfp2', v:76},
+    {e:'kf3', p:'kfp3', v:82},
+    {e:'kf4', p:'kfp4', v:71},
+  ];
+  let cur = 0;
+  const iv = setInterval(() => {
+    cur = Math.min(cur + 1, target);
+    document.getElementById('ki-num').textContent = cur;
+    document.getElementById('ki-ring').setAttribute('stroke-dasharray', `${(cur/100)*circ} ${circ}`);
+    if(cur >= target) clearInterval(iv);
+  }, 16);
+  factors.forEach((f, i) => {
+    setTimeout(() => {
+      document.getElementById(f.e).style.width = f.v + '%';
+      document.getElementById(f.p).textContent = f.v + '%';
+    }, 300 + i * 100);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   BANK TABLES
+══════════════════════════════════════════════════════════════════════ */
+function buildRow(b, idx){
+  const circ = 2 * Math.PI * 12, dash = (b.score / 100) * circ;
+  const rc = sc(b.score);
+  const stCls = b.status === 'ok' ? 'ok' : b.status === 'warn' ? 'warn' : 'err';
+  const stLbl = b.status === 'ok' ? 'Operacional' : b.status === 'warn' ? 'Parcial' : 'Indisponível';
+  const isBest = b.score === Math.max(...BANKS.map(x => x.score));
+  const tr = document.createElement('tr');
+  tr.dataset.name = b.name;
+  tr.style.animationDelay = (idx * .025) + 's';
+  if(isBest) tr.classList.add('best-row');
+  tr.innerHTML = `
+    <td>
+      <div class="td-bank">
+        <div class="bank-abbr" style="background:${b.color}">${b.abbr}</div>
+        <div class="bank-name-row">
+          <div class="name">${b.name}</div>
+          ${isBest ? '<div class="best-label">↑ Melhor desempenho</div>' : ''}
+        </div>
+      </div>
+    </td>
+    <td><div class="td-status"><div class="status-dot ${stCls}"></div><span class="status-label ${stCls}">${stLbl}</span></div></td>
+    <td>
+      <div class="score-ring">
+        <svg viewBox="0 0 30 30"><circle class="sr-bg" cx="15" cy="15" r="12"/><circle class="sr-fg" cx="15" cy="15" r="12" stroke="${rc}" stroke-dasharray="${dash} ${circ}"/></svg>
+        <div class="sr-num">${b.score}</div>
+      </div>
+    </td>
+    <td><span class="wait-val">${b.wait}</span></td>
+    <td><span class="update-val">${b.upd} · <strong>${b.updBy}</strong></span></td>
+    <td>
+      <button class="fav-btn ${b.fav ? 'active' : ''}" onclick="toggleFav(event,'${b.id}',this)">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </button>
+    </td>`;
+  tr.addEventListener('click', e => { if(e.target.closest('.fav-btn')) return; openDetail(b); });
+  return tr;
+}
+
+function buildTables(){
+  const tAll = document.getElementById('tbody-all');
+  const tExp = document.getElementById('tbody-explore');
+  const tFav = document.getElementById('tbody-fav');
+  tAll.innerHTML = ''; tExp.innerHTML = ''; tFav.innerHTML = '';
+  let hasFav = false;
+  BANKS.forEach((b, i) => {
+    tExp.appendChild(buildRow(b, i));
+    if(b.trending) tAll.appendChild(buildRow(b, i));
+    if(b.fav){ tFav.appendChild(buildRow(b, i)); hasFav = true; }
+  });
+  if(!hasFav) tFav.innerHTML = '<tr><td colspan="6" style="padding:28px 0;color:var(--text-3);font-size:.78rem;text-align:center">Nenhum favorito guardado.</td></tr>';
+  document.getElementById('bank-count').textContent = BANKS.length + ' instituições';
+}
+
+function toggleFav(e, id, btn){
+  e.stopPropagation();
+  const b = BANKS.find(x => x.id === id); if(!b) return;
+  b.fav = !b.fav; buildTables();
+  toast(b.fav ? `${b.abbr} adicionado aos favoritos` : `${b.abbr} removido dos favoritos`);
+}
+
+function btTab(el, id){
+  document.querySelectorAll('.bt-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DETAIL PANEL
+══════════════════════════════════════════════════════════════════════ */
+function openDetail(b){
+  currentBank = b; dpIdx = 0;
+  document.getElementById('d-abbr').textContent = b.abbr;
+  document.getElementById('d-name').textContent = b.name;
+  // reset all three states
+  document.getElementById('loc-step').style.display    = '';
+  document.getElementById('loc-loading').style.display = 'none';
+  const results = document.getElementById('det-results');
+  results.style.opacity   = '0';
+  results.style.transform = 'translateY(10px)';
+  results.style.display   = 'none';
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail(){
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  // cancel any pending location search timers
+  _locTimers.forEach(t => clearTimeout(t));
+  _locTimers = [];
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOCATION SEARCH — STATE MACHINE
+══════════════════════════════════════════════════════════════════════ */
+const LOC_STEPS = [
+  { text: 'A obter coordenadas…',             progress: 12 },
+  { text: 'A verificar sinal GPS…',            progress: 28 },
+  { text: 'A identificar agências próximas…',  progress: 51 },
+  { text: 'A analisar nível de procura…',      progress: 73 },
+  { text: 'A calcular tempos de espera…',      progress: 88 },
+  { text: 'A finalizar resultados…',           progress: 97 },
+];
+
+function startLocationSearch(){
+  // Switch from loc-step → loc-loading
+  document.getElementById('loc-step').style.display    = 'none';
+  document.getElementById('loc-loading').style.display = 'flex';
+
+  // Reset loading UI
+  document.getElementById('ll-bar').style.width        = '0%';
+  document.getElementById('ll-status').textContent     = LOC_STEPS[0].text;
+  document.getElementById('ll-status').style.opacity   = '1';
+  ['ll-coords','ll-accuracy','ll-location','ll-count'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '—';
+    el.classList.remove('visible');
+  });
+
+  // Variable total duration 3800–5200ms
+  const totalMs     = 3800 + Math.random() * 1400;
+  const stepInterval = totalMs / (LOC_STEPS.length + 1);
+
+  // Schedule each text/progress step
+  LOC_STEPS.forEach((step, i) => {
+    const t = setTimeout(() => {
+      setLoadingStatus(step.text, step.progress);
+      if(i === 1) revealMeta('ll-coords',   '−8.8916, 13.3742');
+      if(i === 2) revealMeta('ll-accuracy', 'Alta  ±12 m');
+      if(i === 3) revealMeta('ll-location', 'Viana, Luanda');
+      if(i === 4) revealMeta('ll-count',    '3 encontradas');
+    }, stepInterval * (i + 0.6));
+    _locTimers.push(t);
+  });
+
+  // Final: hide loading → show results
+  const finalT = setTimeout(() => {
+    document.getElementById('ll-bar').style.width = '100%';
+    setTimeout(() => {
+      document.getElementById('loc-loading').style.display = 'none';
+      showResults();
+    }, 340);
+  }, totalMs);
+  _locTimers.push(finalT);
+}
+
+function setLoadingStatus(text, progress){
+  const el  = document.getElementById('ll-status');
+  const bar = document.getElementById('ll-bar');
+  el.style.opacity = '0';
+  setTimeout(() => {
+    el.textContent   = text;
+    el.style.opacity = '1';
+    bar.style.width  = progress + '%';
+  }, 200);
+}
+
+function revealMeta(id, value){
+  const el = document.getElementById(id);
+  el.textContent = value;
+  setTimeout(() => el.classList.add('visible'), 60);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   RESULTS — BUILD & SHOW
+══════════════════════════════════════════════════════════════════════ */
+function showResults(){
+  _dpBranches = [...BIC_BRANCHES].sort((a, b) => b.best - a.best);
+
+  buildSlides(_dpBranches);
+  initDpMap(_dpBranches);
+
+  document.getElementById('found-lbl').textContent = `${_dpBranches.length} agências encontradas · Viana`;
+
+  // Show results div, then fade in
+  const results = document.getElementById('det-results');
+  results.style.display   = 'flex';
+  results.style.opacity   = '0';
+  results.style.transform = 'translateY(10px)';
+  // double-rAF ensures transition triggers
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    results.style.transition = 'opacity .4s ease, transform .4s ease';
+    results.style.opacity    = '1';
+    results.style.transform  = 'translateY(0)';
+  }));
+
+  // zoom main map to Viana
+  mainMap.setView([-8.913, 13.358], 14, {animate:true});
+}
+
+function buildSlides(branches){
+  const sw   = document.getElementById('dp-slides');
+  const dots = document.getElementById('dp-dots');
+  sw.innerHTML = ''; dots.innerHTML = ''; dpIdx = 0;
+
+  branches.forEach((b, i) => {
+    const slide   = document.createElement('div');
+    slide.className = 'slide';
+    const perfColor = sc(b.performance);
+    const flowCls   = b.flowLabel === 'Alta procura' ? 'flow-high' : 'flow-normal';
+    const svcHtml   = b.services.map(s => `
+      <div class="bc-svc-row">
+        <span>${s.n}</span>
+        <span class="svc-status ${s.s}">${s.s==='ok'?'Disponível':s.s==='warn'?'Limitado':'Indisponível'}</span>
+      </div>`).join('');
+
+    slide.innerHTML = `
+      <div class="branch-card${b.best ? ' best-card' : ''}">
+        <div class="bc-top-row">
+          ${b.best ? '<div class="best-pill">✦ Melhor desempenho hoje</div>' : '<div></div>'}
+          <span class="bc-flow ${flowCls}">${b.flowLabel}</span>
+        </div>
+        <div class="bc-row1">
+          <div>
+            <div class="bc-name">${b.name}</div>
+            <div class="bc-addr">${b.addr}</div>
+          </div>
+          <div class="bc-dist">${b.dist}</div>
+        </div>
+        <div class="bc-metrics">
+          <div class="bc-metric">
+            <div class="bcm-val" style="color:${perfColor}">${b.performance}%</div>
+            <div class="bcm-lbl">Performance</div>
+          </div>
+          <div class="bc-metric">
+            <div class="bcm-val">${b.wait}</div>
+            <div class="bcm-lbl">Tempo médio</div>
+          </div>
+          <div class="bc-metric">
+            <div class="bcm-val" style="font-size:.74rem">${b.occupancy}</div>
+            <div class="bcm-lbl">Lotação</div>
+          </div>
+        </div>
+        <div class="bc-detail-row">
+          <div class="bc-detail-item">
+            <span class="bc-detail-lbl">Caixas activos</span>
+            <span class="bc-detail-val">${b.caixas}</span>
+          </div>
+          <div class="bc-detail-item">
+            <span class="bc-detail-lbl">Emissão de cartão</span>
+            <span class="bc-detail-val ${b.cardStatus==='Disponível'?'card-ok':b.cardStatus==='Limitada'?'card-warn':'card-err'}">${b.cardStatus}</span>
+          </div>
+          <div class="bc-detail-item">
+            <span class="bc-detail-lbl">Horário</span>
+            <span class="bc-detail-val">${b.hours}</span>
+          </div>
+          <div class="bc-detail-item">
+            <span class="bc-detail-lbl">Estado</span>
+            <span class="bc-detail-val" style="color:var(--green)">${b.estado}</span>
+          </div>
+        </div>
+        <div class="bc-svcs">${svcHtml}</div>
+        <div class="bc-footer-row">
+          <span class="bc-upd-time">${b.updatedAgo} · por ${b.updatedBy}</span>
+          <div class="bc-tags-inline">${b.tags.map(t => `<span class="bc-tag">${t}</span>`).join('')}</div>
+        </div>
+      </div>`;
+
+    sw.appendChild(slide);
+    const dot = document.createElement('div');
+    dot.className = 's-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => dpGo(i);
+    dots.appendChild(dot);
+  });
+  updateArrows(branches.length);
+}
+
+function dpMv(d){ dpGo(dpIdx + d); }
+function dpGo(idx){
+  const total = document.querySelectorAll('#dp-slides .slide').length;
+  dpIdx = Math.max(0, Math.min(idx, total - 1));
+  document.getElementById('dp-slides').style.transform = `translateX(-${dpIdx * 100}%)`;
+  document.querySelectorAll('#dp-dots .s-dot').forEach((d, i) => d.classList.toggle('active', i === dpIdx));
+  updateArrows(total);
+  if(dpMap && _dpBranches[dpIdx]){
+    dpMap.setView([_dpBranches[dpIdx].lat, _dpBranches[dpIdx].lng], 15, {animate:true});
+  }
+}
+function updateArrows(t){
+  document.getElementById('dp-prev').disabled = dpIdx === 0;
+  document.getElementById('dp-next').disabled = dpIdx === t - 1;
+}
+
+function initDpMap(branches){
+  const latlngs = branches.map(b => [b.lat, b.lng]);
+  const bounds  = L.latLngBounds(latlngs);
+  if(!dpMapInit){
+    setTimeout(() => {
+      dpMap = L.map('dp-map', {zoomControl:false, attributionControl:false});
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {maxZoom:19}).addTo(dpMap);
+      addDpMkrs(branches);
+      setTimeout(() => { dpMap.fitBounds(bounds, {padding:[18,18], animate:false}); }, 100);
+      dpMapInit = true;
+    }, 80);
+  } else {
+    dpMarkers.forEach(m => dpMap.removeLayer(m));
+    dpMarkers = [];
+    addDpMkrs(branches);
+    setTimeout(() => dpMap.fitBounds(bounds, {padding:[18,18], animate:true}), 100);
+  }
+}
+
+function addDpMkrs(branches){
+  branches.forEach((b, i) => {
+    // staggered appearance: 200ms between each marker
+    setTimeout(() => {
+      const size  = b.best ? 28 : 22;
+      const col   = b.best ? '#B8974A' : '#0B1825';
+      const tCol  = b.best ? '#0B1825' : '#fff';
+      const icon  = L.divIcon({
+        className: '',
+        iconSize:  [size, size],
+        iconAnchor:[size/2, size/2],
+        html: `<div style="
+          width:${size}px;height:${size}px;border-radius:50%;
+          background:${col};border:2.5px solid #fff;
+          box-shadow:0 3px 10px rgba(0,0,0,.28);
+          display:flex;align-items:center;justify-content:center;
+          font-family:'DM Mono',monospace;font-size:${b.best?10:9}px;
+          font-weight:600;color:${tCol};
+          animation:mkr-pop .4s cubic-bezier(.34,1.56,.64,1) both
+        ">${i+1}</div>
+        <style>@keyframes mkr-pop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}</style>`
+      });
+      const popup = `
+        <div style="font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.6;min-width:160px;padding:2px">
+          <div style="font-weight:600;color:#0B1825;margin-bottom:2px">${b.name}</div>
+          <div style="color:#7A96A8;font-size:11px">${b.dist} · espera ${b.wait}</div>
+          <div style="font-size:11px;color:${sc(b.performance)};font-weight:500;margin-top:2px">Performance ${b.performance}%</div>
+          ${b.best ? '<div style="font-size:10px;color:#B8974A;font-weight:500;margin-top:3px">✦ Melhor desempenho hoje</div>' : ''}
+        </div>`;
+      const m = L.marker([b.lat, b.lng], {icon}).addTo(dpMap)
+        .bindPopup(popup, {closeButton:false, offset:[0, -(size/2)]})
+        .on('click', () => dpGo(i));
+      if(b.best) setTimeout(() => m.openPopup(), 400);
+      dpMarkers.push(m);
+    }, i * 220);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONTRIBUTE MODAL
+══════════════════════════════════════════════════════════════════════ */
+function openContrib(){
+  document.getElementById('ctr-bank').value = '';
+  document.getElementById('ctr-form').style.display = '';
+  document.getElementById('ctr-confirm').classList.remove('active');
+  document.getElementById('prev-section').style.display = 'none';
+  document.getElementById('ctr-map-wrap').style.display = 'none';
+  buildSvcs();
+  document.getElementById('modal-wrap').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if(!ctrMapInit){
+    setTimeout(() => {
+      ctrMap = L.map('ctr-mini-map', {zoomControl:false, attributionControl:false}).setView([-8.875, 13.308], 12);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {maxZoom:19}).addTo(ctrMap);
+      ctrMapInit = true;
+    }, 80);
+  }
+}
+function closeContrib(){ document.getElementById('modal-wrap').classList.remove('open'); document.body.style.overflow = ''; }
+function modalClick(e){ if(e.target === e.currentTarget || e.target.classList.contains('modal-bd')) closeContrib(); }
+
+function buildSvcs(){
+  const g = document.getElementById('svc-grid'); g.innerHTML = '';
+  SVCS_CTR.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'svc-row s-ok'; d.dataset.st = 'ok';
+    d.innerHTML = `<div class="sr-left"><div class="sr-dot"></div><span class="sr-name">${s}</span></div><span class="sr-val">Disponível</span>`;
+    d.onclick = () => cycleSvc(d);
+    g.appendChild(d);
+  });
+}
+function cycleSvc(el){
+  const states = ['ok','warn','err'], lbls = ['Disponível','Intermitente','Indisponível'];
+  let i = states.indexOf(el.dataset.st); i = (i+1) % 3;
+  el.dataset.st = states[i]; el.className = 'svc-row s-' + states[i];
+  el.querySelector('.sr-val').textContent = lbls[i];
+}
+
+function ctrInput(v){
+  clearTimeout(_ctrTO);
+  _ctrTO = setTimeout(() => {
+    const lo  = v.toLowerCase();
+    const hit = lo.includes('bic') || lo.includes('luanda') || lo.includes('bai') || lo.includes('bfa');
+    document.getElementById('prev-section').style.display   = hit ? '' : 'none';
+    document.getElementById('ctr-map-wrap').style.display   = hit && v.length > 3 ? 'block' : 'none';
+    if(hit && v.length > 3){ buildPrev(); moveCtrMap(lo); }
+  }, 280);
+}
+function buildPrev(){
+  document.getElementById('prev-list').innerHTML = PREV_CONTRIBS.map(c => `
+    <div class="prev-row">
+      <div class="prev-av" style="background:${c.color}">${c.name.charAt(0)}</div>
+      <div><div class="prev-name">${c.name}</div><div class="prev-detail">${c.detail}</div></div>
+      <div class="prev-time">${c.time}</div>
+    </div>`).join('');
+}
+function moveCtrMap(v){
+  if(!ctrMapInit) return;
+  const c = v.includes('catete') ? [-8.8980,13.3580] : v.includes('sul') ? [-8.9350,13.3520] : [-8.9035,13.3745];
+  ctrMap.setView(c, 15, {animate:true});
+  if(_ctrMkr) ctrMap.removeLayer(_ctrMkr);
+  const icon = L.divIcon({className:'', iconSize:[16,16], iconAnchor:[8,8],
+    html:`<div style="width:16px;height:16px;border-radius:50%;background:#B8974A;border:2px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.2)"></div>`});
+  _ctrMkr = L.marker(c, {icon}).addTo(ctrMap);
+  setTimeout(() => ctrMap.invalidateSize(), 100);
+}
+function togglePublic(){ public_ = !public_; document.getElementById('pub-toggle').classList.toggle('on', public_); }
+
+function submitContrib(){
+  const v = document.getElementById('ctr-bank').value.trim();
+  if(!v){ document.getElementById('ctr-bank').focus(); return; }
+  const now = new Date(), t = now.toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit'});
+  PREV_CONTRIBS.unshift({name:'Micael Luvumbo', color:'#154360', detail:'Estado actualizado', time:t});
+  document.getElementById('ctr-form').style.display = 'none';
+  document.getElementById('ctr-confirm').classList.add('active');
+  document.getElementById('confirm-txt').textContent = `${v} · Registado às ${t} por Micael L.`;
+  document.getElementById('ticker').textContent = `há menos de 1 min · ${v} · por Micael L.`;
+  toast('Actualização registada com sucesso');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  buildHours();
+  buildTables();
+  initTopbarDate();
+  setTimeout(animateIndex, 400);
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ closeDetail(); closeContrib(); }
+});
+</script>
+</body>
+</html>
